@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/ModularVerticalSlice.Modules/ModularVerticalSlice.Modules.csproj" Id="9f6117e1-9388-4238-aa98-714fb69e77b3" />
+    <Project Path="src/ModularVerticalSlice.Persistence/ModularVerticalSlice.Persistence.csproj" Id="8b9cf60e-7989-47c2-9188-b7007ea5bc9f" />
+    <Project Path="src/ModularVerticalSlice.SharedKernel/ModularVerticalSlice.SharedKernel.csproj" Id="0b33d6b5-8f72-44fa-a5ca-bb8e3fa684e1" />
+    <Project Path="src/ModularVerticalSlice.WebApi/ModularVerticalSlice.WebApi.csproj" Id="3b95e8d3-e39f-43b9-ad47-eb1e225f0e5c" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ModularVerticalSlice.ArchitectureTests/ModularVerticalSlice.ArchitectureTests.csproj" Id="df7dcc84-7c92-4f8a-bf33-5b727facd453" />
+    <Project Path="tests/ModularVerticalSlice.IntegrationTests/ModularVerticalSlice.IntegrationTests.csproj" Id="15b53d51-11ec-407b-86bd-4abd96a2656e" />
+    <Project Path="tests/ModularVerticalSlice.UnitTests/ModularVerticalSlice.UnitTests.csproj" Id="54c8d4fb-ce72-454c-82fa-0032788f3a48" />
+  </Folder>
+</Solution>
