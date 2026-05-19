@@ -6,5 +6,7 @@ obj/
 TestResults/
 *.coverage
 *.coveragexml
+
+# Keep internal blueprint docs only in the local workspace.
 docs-internal/
 
