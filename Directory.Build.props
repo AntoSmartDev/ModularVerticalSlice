@@ -7,4 +7,8 @@
     <AnalysisLevel>latest</AnalysisLevel>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
+
+  <PropertyGroup Condition="$([System.String]::Copy('$(MSBuildProjectName)').EndsWith('Tests'))">
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
 </Project>
