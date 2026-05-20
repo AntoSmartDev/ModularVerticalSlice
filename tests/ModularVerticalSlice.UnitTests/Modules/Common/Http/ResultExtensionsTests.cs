@@ -96,6 +96,54 @@ public class ResultExtensionsTests
         Assert.Equal("Not enough tickets are available.", GetStringProperty(response.ProblemDetails, "detail"));
     }
 
+    /// <summary>
+    /// Verifies that unauthorized errors are mapped to HTTP 401.
+    /// </summary>
+    [Fact]
+    public async Task ResultExtensions_Should_Map_Unauthorized_To_401()
+    {
+        Result<string> result = Error.Unauthorized(
+            "Auth.MissingUser",
+            "The caller is not authenticated.");
+
+        var response = await ExecuteAsync(result.ToHttpResponse());
+
+        Assert.Equal(StatusCodes.Status401Unauthorized, response.StatusCode);
+        Assert.Equal("Auth.MissingUser", GetStringProperty(response.ProblemDetails, "title"));
+    }
+
+    /// <summary>
+    /// Verifies that forbidden errors are mapped to HTTP 403.
+    /// </summary>
+    [Fact]
+    public async Task ResultExtensions_Should_Map_Forbidden_To_403()
+    {
+        Result<string> result = Error.Forbidden(
+            "Auth.ForbiddenAction",
+            "The caller is not allowed.");
+
+        var response = await ExecuteAsync(result.ToHttpResponse());
+
+        Assert.Equal(StatusCodes.Status403Forbidden, response.StatusCode);
+        Assert.Equal("Auth.ForbiddenAction", GetStringProperty(response.ProblemDetails, "title"));
+    }
+
+    /// <summary>
+    /// Verifies that generic failures fall back to HTTP 500.
+    /// </summary>
+    [Fact]
+    public async Task ResultExtensions_Should_Map_Generic_Failure_To_500()
+    {
+        Result<string> result = Error.Failure(
+            "General.UnexpectedFailure",
+            "An unexpected failure occurred.");
+
+        var response = await ExecuteAsync(result.ToHttpResponse());
+
+        Assert.Equal(StatusCodes.Status500InternalServerError, response.StatusCode);
+        Assert.Equal("General.UnexpectedFailure", GetStringProperty(response.ProblemDetails, "title"));
+    }
+
     private static async Task<HttpExecutionResult> ExecuteAsync(IResult result)
     {
         var services = new ServiceCollection();
