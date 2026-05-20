@@ -8,5 +8,5 @@ TestResults/
 *.coveragexml
 
 # Keep internal blueprint docs only in the local workspace.
-docs-internal/
+_private/
 
