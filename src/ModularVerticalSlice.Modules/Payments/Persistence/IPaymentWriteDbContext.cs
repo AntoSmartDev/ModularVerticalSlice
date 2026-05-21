@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Modules.Payments.Persistence.Entities;
+
 namespace ModularVerticalSlice.Modules.Payments.Persistence;
 
 /// <summary>
@@ -11,4 +14,8 @@ namespace ModularVerticalSlice.Modules.Payments.Persistence;
 /// </remarks>
 public interface IPaymentWriteDbContext
 {
+    /// <summary>
+    /// Gets the mutable payments set owned by the module.
+    /// </summary>
+    DbSet<Payment> Payments { get; }
 }

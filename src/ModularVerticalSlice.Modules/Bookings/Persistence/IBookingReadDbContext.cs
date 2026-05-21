@@ -1,3 +1,5 @@
+using ModularVerticalSlice.Modules.Bookings.Persistence.Entities;
+
 namespace ModularVerticalSlice.Modules.Bookings.Persistence;
 
 /// <summary>
@@ -11,4 +13,8 @@ namespace ModularVerticalSlice.Modules.Bookings.Persistence;
 /// </remarks>
 public interface IBookingReadDbContext
 {
+    /// <summary>
+    /// Gets the queryable bookings surface for read operations.
+    /// </summary>
+    IQueryable<Booking> Bookings { get; }
 }

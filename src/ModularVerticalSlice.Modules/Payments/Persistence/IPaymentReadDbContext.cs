@@ -1,3 +1,5 @@
+using ModularVerticalSlice.Modules.Payments.Persistence.Entities;
+
 namespace ModularVerticalSlice.Modules.Payments.Persistence;
 
 /// <summary>
@@ -11,4 +13,8 @@ namespace ModularVerticalSlice.Modules.Payments.Persistence;
 /// </remarks>
 public interface IPaymentReadDbContext
 {
+    /// <summary>
+    /// Gets the queryable payments surface for read operations.
+    /// </summary>
+    IQueryable<Payment> Payments { get; }
 }

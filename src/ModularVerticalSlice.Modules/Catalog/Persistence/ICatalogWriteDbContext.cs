@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+
 namespace ModularVerticalSlice.Modules.Catalog.Persistence;
 
 /// <summary>
@@ -11,4 +14,8 @@ namespace ModularVerticalSlice.Modules.Catalog.Persistence;
 /// </remarks>
 public interface ICatalogWriteDbContext
 {
+    /// <summary>
+    /// Gets the mutable catalog events set owned by the module.
+    /// </summary>
+    DbSet<Event> Events { get; }
 }

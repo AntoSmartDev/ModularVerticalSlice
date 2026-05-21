@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Modules.Bookings.Persistence.Entities;
+
 namespace ModularVerticalSlice.Modules.Bookings.Persistence;
 
 /// <summary>
@@ -11,4 +14,8 @@ namespace ModularVerticalSlice.Modules.Bookings.Persistence;
 /// </remarks>
 public interface IBookingWriteDbContext
 {
+    /// <summary>
+    /// Gets the mutable bookings set owned by the module.
+    /// </summary>
+    DbSet<Booking> Bookings { get; }
 }

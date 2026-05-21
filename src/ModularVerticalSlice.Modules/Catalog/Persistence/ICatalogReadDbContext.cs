@@ -1,3 +1,5 @@
+using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+
 namespace ModularVerticalSlice.Modules.Catalog.Persistence;
 
 /// <summary>
@@ -11,4 +13,8 @@ namespace ModularVerticalSlice.Modules.Catalog.Persistence;
 /// </remarks>
 public interface ICatalogReadDbContext
 {
+    /// <summary>
+    /// Gets the queryable catalog events surface for read operations.
+    /// </summary>
+    IQueryable<Event> Events { get; }
 }
