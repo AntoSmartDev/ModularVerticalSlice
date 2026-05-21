@@ -1,4 +1,5 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Modules.Catalog.Persistence;
 
 namespace ModularVerticalSlice.Persistence;
 
@@ -9,7 +10,10 @@ namespace ModularVerticalSlice.Persistence;
 /// This context lives in the Persistence project so modules depend only on constrained
 /// mini DbContext abstractions rather than the full EF Core composition surface.
 /// </remarks>
-public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
+    DbContext(options),
+    ICatalogReadDbContext,
+    ICatalogWriteDbContext
 {
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
