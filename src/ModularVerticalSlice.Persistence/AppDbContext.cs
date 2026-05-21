@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Modules.Catalog.Persistence;
 
 namespace ModularVerticalSlice.Persistence;
@@ -12,6 +13,8 @@ namespace ModularVerticalSlice.Persistence;
 /// </remarks>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
     DbContext(options),
+    IBookingReadDbContext,
+    IBookingWriteDbContext,
     ICatalogReadDbContext,
     ICatalogWriteDbContext
 {
