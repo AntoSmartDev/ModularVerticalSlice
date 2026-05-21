@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ModularVerticalSlice.Modules.Bookings.Persistence;
+using ModularVerticalSlice.Modules.Catalog.Persistence;
+using ModularVerticalSlice.Modules.Payments.Persistence;
 
 namespace ModularVerticalSlice.Persistence;
 
@@ -25,6 +28,12 @@ public static class PersistenceServiceCollectionExtensions
         var connectionString = configuration.GetConnectionString("Database") ?? DefaultConnectionString;
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddScoped<ICatalogReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<ICatalogWriteDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IBookingReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IBookingWriteDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IPaymentReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IPaymentWriteDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
         return services;
     }
