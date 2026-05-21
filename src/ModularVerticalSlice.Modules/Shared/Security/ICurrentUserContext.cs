@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Common.Security;
+namespace ModularVerticalSlice.Modules.Shared.Security;
 
 /// <summary>
 /// Provides access to the current user identity for module-level application flows.

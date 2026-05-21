@@ -4,7 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Modules.Bookings;
 using ModularVerticalSlice.Modules.Catalog;
-using ModularVerticalSlice.Modules.Common.Modules;
+using ModularVerticalSlice.Modules.Shared.Modules;
 using ModularVerticalSlice.Modules.Notifications;
 using ModularVerticalSlice.Modules.Payments;
 

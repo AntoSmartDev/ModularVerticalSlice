@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Modules.Catalog.Persistence;

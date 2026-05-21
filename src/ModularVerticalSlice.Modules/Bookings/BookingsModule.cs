@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Modules.Common.Modules;
+using ModularVerticalSlice.Modules.Shared.Modules;
 
 namespace ModularVerticalSlice.Modules.Bookings;
 

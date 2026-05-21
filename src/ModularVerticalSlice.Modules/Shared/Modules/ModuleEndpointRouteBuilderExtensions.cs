@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Routing;
 
-namespace ModularVerticalSlice.Modules.Common.Modules;
+namespace ModularVerticalSlice.Modules.Shared.Modules;
 
 /// <summary>
 /// Provides endpoint mapping helpers for application modules.

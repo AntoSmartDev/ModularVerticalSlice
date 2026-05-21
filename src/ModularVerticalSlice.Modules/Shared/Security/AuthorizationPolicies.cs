@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Common.Security;
+namespace ModularVerticalSlice.Modules.Shared.Security;
 
 /// <summary>
 /// Defines the stable authorization policy names referenced by application modules.

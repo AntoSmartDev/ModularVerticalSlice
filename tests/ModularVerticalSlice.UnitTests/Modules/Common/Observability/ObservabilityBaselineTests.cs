@@ -1,4 +1,4 @@
-using ModularVerticalSlice.Modules.Common.Observability;
+using ModularVerticalSlice.Modules.Shared.Observability;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Common.Observability;
 
