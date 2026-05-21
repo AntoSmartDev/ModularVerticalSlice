@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Modules.Catalog.Persistence;
+using ModularVerticalSlice.Modules.Payments.Persistence;
 
 namespace ModularVerticalSlice.Persistence;
 
@@ -16,7 +17,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
     IBookingReadDbContext,
     IBookingWriteDbContext,
     ICatalogReadDbContext,
-    ICatalogWriteDbContext
+    ICatalogWriteDbContext,
+    IPaymentReadDbContext,
+    IPaymentWriteDbContext
 {
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
