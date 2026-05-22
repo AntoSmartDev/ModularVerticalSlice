@@ -1,6 +1,6 @@
-using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Catalog.Persistence;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 
 /// <summary>
 /// Defines the read-side persistence surface reserved for the Catalog module.

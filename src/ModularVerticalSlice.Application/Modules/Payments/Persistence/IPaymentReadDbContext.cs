@@ -1,6 +1,6 @@
-using ModularVerticalSlice.Modules.Payments.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Payments.Persistence;
+namespace ModularVerticalSlice.Application.Modules.Payments.Persistence;
 
 /// <summary>
 /// Defines the read-side persistence surface reserved for the Payments module.

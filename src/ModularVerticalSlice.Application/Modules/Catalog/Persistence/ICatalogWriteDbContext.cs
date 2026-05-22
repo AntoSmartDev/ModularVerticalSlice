@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Catalog.Persistence;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 
 /// <summary>
 /// Defines the write-side persistence surface reserved for the Catalog module.

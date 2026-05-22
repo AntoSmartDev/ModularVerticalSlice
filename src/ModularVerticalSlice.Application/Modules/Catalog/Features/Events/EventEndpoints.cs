@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
-using ModularVerticalSlice.Modules.Catalog.Messages;
-using ModularVerticalSlice.Modules.Shared.Http;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
+using ModularVerticalSlice.Application.Shared.Http;
 
-namespace ModularVerticalSlice.Modules.Catalog.Features.Events;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 
 /// <summary>
 /// Maps the baseline HTTP endpoints exposed by the Catalog events feature.

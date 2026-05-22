@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Payments.Persistence.Entities;
+namespace ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
 
 /// <summary>
 /// Represents a persisted payment attempt owned by the Payments module.

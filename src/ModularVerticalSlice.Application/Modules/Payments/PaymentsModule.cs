@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Modules.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Modules;
 
-namespace ModularVerticalSlice.Modules.Payments;
+namespace ModularVerticalSlice.Application.Modules.Payments;
 
 /// <summary>
 /// Registers services and endpoints exposed by the Payments module.

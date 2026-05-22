@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Modules.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Modules;
 
-namespace ModularVerticalSlice.Modules.Notifications;
+namespace ModularVerticalSlice.Application.Modules.Notifications;
 
 /// <summary>
 /// Registers services and endpoints exposed by the Notifications module.

@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Shared.Observability;
+namespace ModularVerticalSlice.Application.Shared.Observability;
 
 /// <summary>
 /// Provides access to the current correlation identifier for module-level flows.

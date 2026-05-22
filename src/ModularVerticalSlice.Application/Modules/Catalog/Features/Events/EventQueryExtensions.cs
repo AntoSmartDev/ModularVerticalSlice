@@ -1,8 +1,8 @@
 using System.Linq.Expressions;
-using ModularVerticalSlice.Modules.Catalog.Messages;
-using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Catalog.Features.Events;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 
 internal static class EventQueryExtensions
 {

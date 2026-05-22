@@ -25,7 +25,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("ModularVerticalSlice.Modules.Bookings.Persistence.Entities.Booking", b =>
+            modelBuilder.Entity("ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities.Booking", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -66,7 +66,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ModularVerticalSlice.Modules.Catalog.Persistence.Entities.Event", b =>
+            modelBuilder.Entity("ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities.Event", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -95,7 +95,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ModularVerticalSlice.Modules.Payments.Persistence.Entities.Payment", b =>
+            modelBuilder.Entity("ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities.Payment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()

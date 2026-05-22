@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ModularVerticalSlice.Modules.Bookings.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Bookings.Persistence;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 
 /// <summary>
 /// Configures the relational mapping for the Bookings persistence baseline.

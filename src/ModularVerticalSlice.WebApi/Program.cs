@@ -1,8 +1,8 @@
-using ModularVerticalSlice.Modules.Bookings;
-using ModularVerticalSlice.Modules.Catalog;
-using ModularVerticalSlice.Modules.Shared.Modules;
-using ModularVerticalSlice.Modules.Notifications;
-using ModularVerticalSlice.Modules.Payments;
+using ModularVerticalSlice.Application.Modules.Bookings;
+using ModularVerticalSlice.Application.Modules.Catalog;
+using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Modules.Notifications;
+using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);

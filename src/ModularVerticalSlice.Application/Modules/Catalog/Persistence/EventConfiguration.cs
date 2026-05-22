@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Catalog.Persistence;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 
 /// <summary>
 /// Configures the relational mapping for the Catalog event entity.

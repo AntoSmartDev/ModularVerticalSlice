@@ -1,6 +1,6 @@
 using ModularVerticalSlice.SharedKernel;
 
-namespace ModularVerticalSlice.Modules.Catalog.Features.Events;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 
 /// <summary>
 /// Contains validation rules for the Catalog events feature baseline.

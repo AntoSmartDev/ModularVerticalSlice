@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Catalog.Messages;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Messages;
 
 /// <summary>
 /// Requests the reservation of tickets for a specific booking.

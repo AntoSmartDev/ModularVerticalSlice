@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using ModularVerticalSlice.Modules.Bookings.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Bookings.Persistence;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 
 /// <summary>
 /// Defines the write-side persistence surface reserved for the Bookings module.

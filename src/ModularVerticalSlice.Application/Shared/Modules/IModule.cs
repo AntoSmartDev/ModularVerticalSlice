@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ModularVerticalSlice.Modules.Shared.Modules;
+namespace ModularVerticalSlice.Application.Shared.Modules;
 
 /// <summary>
 /// Defines the bootstrap contract used to compose a business module into the host.

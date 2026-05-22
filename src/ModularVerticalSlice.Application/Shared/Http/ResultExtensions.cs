@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using ModularVerticalSlice.SharedKernel;
 
-namespace ModularVerticalSlice.Modules.Shared.Http;
+namespace ModularVerticalSlice.Application.Shared.Http;
 
 /// <summary>
 /// Maps application results to consistent HTTP responses.

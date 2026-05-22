@@ -1,11 +1,11 @@
 using Microsoft.EntityFrameworkCore;
-using ModularVerticalSlice.Modules.Catalog.Domain;
-using ModularVerticalSlice.Modules.Catalog.Messages;
-using ModularVerticalSlice.Modules.Catalog.Persistence;
-using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Domain;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 
-namespace ModularVerticalSlice.Modules.Catalog.Features.Events;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 
 /// <summary>
 /// Handles Catalog event commands and queries.

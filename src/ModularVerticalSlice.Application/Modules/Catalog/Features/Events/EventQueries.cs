@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Catalog.Features.Events;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 
 /// <summary>
 /// Requests the list of upcoming catalog events.

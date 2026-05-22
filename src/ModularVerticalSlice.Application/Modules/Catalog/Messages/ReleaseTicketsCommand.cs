@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Catalog.Messages;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Messages;
 
 /// <summary>
 /// Requests the release of previously reserved tickets for a booking.

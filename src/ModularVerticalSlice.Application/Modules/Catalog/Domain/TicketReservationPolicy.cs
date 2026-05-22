@@ -1,6 +1,6 @@
 using ModularVerticalSlice.SharedKernel;
 
-namespace ModularVerticalSlice.Modules.Catalog.Domain;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Domain;
 
 /// <summary>
 /// Protects ticket availability invariants for Catalog events.

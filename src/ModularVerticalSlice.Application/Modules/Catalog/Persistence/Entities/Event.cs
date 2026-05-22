@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 
 /// <summary>
 /// Represents a persisted catalog event available for booking flows.

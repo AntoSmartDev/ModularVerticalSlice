@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using ModularVerticalSlice.Modules.Payments.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
 
-namespace ModularVerticalSlice.Modules.Payments.Persistence;
+namespace ModularVerticalSlice.Application.Modules.Payments.Persistence;
 
 /// <summary>
 /// Configures the relational mapping for the Payments persistence baseline.

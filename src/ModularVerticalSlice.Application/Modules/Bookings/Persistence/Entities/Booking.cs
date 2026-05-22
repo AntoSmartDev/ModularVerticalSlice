@@ -1,4 +1,4 @@
-﻿namespace ModularVerticalSlice.Modules.Bookings.Persistence.Entities;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 
 /// <summary>
 /// Represents a persisted booking owned by the Bookings module.

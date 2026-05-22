@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Modules.Catalog.Features.Events;
-using ModularVerticalSlice.Modules.Shared.Modules;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
+using ModularVerticalSlice.Application.Shared.Modules;
 
-namespace ModularVerticalSlice.Modules.Catalog;
+namespace ModularVerticalSlice.Application.Modules.Catalog;
 
 /// <summary>
 /// Registers services and endpoints exposed by the Catalog module.
@@ -19,7 +19,7 @@ public sealed class CatalogModule : IModule
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(TimeProvider.System);
-        services.AddScoped<ModularVerticalSlice.Modules.Catalog.Features.Events.EventHandler>();
+        services.AddScoped<ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler>();
     }
 
     /// <inheritdoc />

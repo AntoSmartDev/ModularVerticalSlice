@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ModularVerticalSlice.Modules.Shared.Modules;
+namespace ModularVerticalSlice.Application.Shared.Modules;
 
 /// <summary>
 /// Provides service registration helpers for application modules.
