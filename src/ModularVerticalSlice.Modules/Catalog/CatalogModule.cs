@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ModularVerticalSlice.Modules.Catalog.Features.Events;
 using ModularVerticalSlice.Modules.Shared.Modules;
 
 namespace ModularVerticalSlice.Modules.Catalog;
@@ -17,10 +18,13 @@ public sealed class CatalogModule : IModule
     /// <inheritdoc />
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<ModularVerticalSlice.Modules.Catalog.Features.Events.EventHandler>();
     }
 
     /// <inheritdoc />
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
+        EventEndpoints.Map(endpoints);
     }
 }
