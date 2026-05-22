@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ModularVerticalSlice.Modules\ModularVerticalSlice.Modules.csproj" />
+    <ProjectReference Include="..\ModularVerticalSlice.Application\ModularVerticalSlice.Application.csproj" />
     <ProjectReference Include="..\ModularVerticalSlice.Persistence\ModularVerticalSlice.Persistence.csproj" />
     <ProjectReference Include="..\ModularVerticalSlice.SharedKernel\ModularVerticalSlice.SharedKernel.csproj" />
   </ItemGroup>
