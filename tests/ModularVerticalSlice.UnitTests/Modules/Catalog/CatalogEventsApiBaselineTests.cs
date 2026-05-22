@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Modules.Catalog;
 using ModularVerticalSlice.Modules.Catalog.Features.Events;
+using ModularVerticalSlice.Modules.Catalog.Messages;
 using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
@@ -88,6 +89,95 @@ public class CatalogEventsApiBaselineTests
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
         Assert.Equal("Catalog.EventNotFound", result.Error.Code);
+    }
+
+    /// <summary>
+    /// Verifies that reserving tickets decreases event availability.
+    /// </summary>
+    [Fact]
+    public async Task ReserveTickets_Should_Decrease_AvailableTickets()
+    {
+        await using var db = CreateDbContext();
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Reserved event",
+            Date = new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 50,
+            AvailableTickets = 10
+        });
+        await db.SaveChangesAsync();
+
+        var handler = CreateHandler(db);
+
+        var result = await handler.Handle(
+            new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(8, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+    }
+
+    /// <summary>
+    /// Verifies that reserving more tickets than available fails with conflict.
+    /// </summary>
+    [Fact]
+    public async Task ReserveTickets_Should_Fail_When_Not_Enough_Tickets()
+    {
+        await using var db = CreateDbContext();
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Limited event",
+            Date = new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 50,
+            AvailableTickets = 1
+        });
+        await db.SaveChangesAsync();
+
+        var handler = CreateHandler(db);
+
+        var result = await handler.Handle(
+            new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.Conflict, result.Error.Type);
+        Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
+        Assert.Equal(1, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+    }
+
+    /// <summary>
+    /// Verifies that releasing tickets increases event availability.
+    /// </summary>
+    [Fact]
+    public async Task ReleaseTickets_Should_Increase_AvailableTickets()
+    {
+        await using var db = CreateDbContext();
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Compensated event",
+            Date = new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 50,
+            AvailableTickets = 8
+        });
+        await db.SaveChangesAsync();
+
+        var handler = CreateHandler(db);
+
+        var result = await handler.Handle(
+            new ReleaseTicketsCommand(eventId, 2, Guid.NewGuid()),
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(10, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
     /// <summary>
