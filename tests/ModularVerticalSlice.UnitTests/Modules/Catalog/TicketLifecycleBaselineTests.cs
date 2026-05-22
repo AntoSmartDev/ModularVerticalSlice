@@ -1,5 +1,5 @@
-using ModularVerticalSlice.Modules.Catalog.Domain;
-using ModularVerticalSlice.Modules.Catalog.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Domain;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.SharedKernel;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Catalog;

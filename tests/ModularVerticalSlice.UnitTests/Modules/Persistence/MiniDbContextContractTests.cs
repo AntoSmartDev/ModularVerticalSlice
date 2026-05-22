@@ -1,7 +1,7 @@
 using System.Reflection;
-using ModularVerticalSlice.Modules.Bookings.Persistence;
-using ModularVerticalSlice.Modules.Catalog.Persistence;
-using ModularVerticalSlice.Modules.Payments.Persistence;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
+using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Persistence;
 

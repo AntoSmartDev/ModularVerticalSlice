@@ -1,13 +1,13 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Modules.Shared.Http;
+using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Common.Http;
 
 /// <summary>
-/// Verifies the HTTP mapping behavior of <see cref="ModularVerticalSlice.Modules.Shared.Http.ResultExtensions" />.
+/// Verifies the HTTP mapping behavior of <see cref="ModularVerticalSlice.Application.Shared.Http.ResultExtensions" />.
 /// </summary>
 public class ResultExtensionsTests
 {

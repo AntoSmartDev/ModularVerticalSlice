@@ -1,4 +1,4 @@
-using ModularVerticalSlice.Modules.Shared.Security;
+using ModularVerticalSlice.Application.Shared.Security;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Common.Security;
 

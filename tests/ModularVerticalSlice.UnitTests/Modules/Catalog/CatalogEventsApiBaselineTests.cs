@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Modules.Catalog;
-using ModularVerticalSlice.Modules.Catalog.Features.Events;
-using ModularVerticalSlice.Modules.Catalog.Messages;
-using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
-using CatalogEventHandler = ModularVerticalSlice.Modules.Catalog.Features.Events.EventHandler;
+using CatalogEventHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Catalog;
 

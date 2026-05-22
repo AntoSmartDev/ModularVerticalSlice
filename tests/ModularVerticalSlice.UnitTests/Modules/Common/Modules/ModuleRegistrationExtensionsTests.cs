@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Modules.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Modules;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Common.Modules;
 
