@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Modules.Catalog.Domain;
 using ModularVerticalSlice.Modules.Catalog.Messages;
 using ModularVerticalSlice.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Modules.Catalog.Persistence.Entities;
@@ -48,6 +49,38 @@ public sealed class EventHandler(
                 entity.Title,
                 entity.Date,
                 entity.TicketPrice));
+    }
+
+    /// <summary>
+    /// Handles ticket reservation for a specific catalog event.
+    /// </summary>
+    public async Task<Result> Handle(
+        ReserveTicketsCommand command,
+        CancellationToken cancellationToken)
+    {
+        var entity = await writeDb.Events
+            .FirstOrDefaultAsync(x => x.Id == command.EventId, cancellationToken);
+
+        if (entity is null)
+        {
+            return Result.Failure(
+                Error.NotFound(
+                    "Catalog.EventNotFound",
+                    "The requested event was not found."));
+        }
+
+        var reservationResult = TicketReservationPolicy.CanReserve(
+            entity.AvailableTickets,
+            command.Quantity);
+
+        if (reservationResult.IsFailure)
+        {
+            return reservationResult;
+        }
+
+        entity.AvailableTickets -= command.Quantity;
+
+        return Result.Success();
     }
 
     /// <summary>
