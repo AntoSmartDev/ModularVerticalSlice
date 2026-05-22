@@ -84,6 +84,29 @@ public sealed class EventHandler(
     }
 
     /// <summary>
+    /// Handles ticket release for a specific catalog event.
+    /// </summary>
+    public async Task<Result> Handle(
+        ReleaseTicketsCommand command,
+        CancellationToken cancellationToken)
+    {
+        var entity = await writeDb.Events
+            .FirstOrDefaultAsync(x => x.Id == command.EventId, cancellationToken);
+
+        if (entity is null)
+        {
+            return Result.Failure(
+                Error.NotFound(
+                    "Catalog.EventNotFound",
+                    "The requested event was not found."));
+        }
+
+        entity.AvailableTickets += command.Quantity;
+
+        return Result.Success();
+    }
+
+    /// <summary>
     /// Handles the query that returns the list of upcoming events.
     /// </summary>
     public async Task<Result<IReadOnlyList<EventReadModel>>> Handle(
