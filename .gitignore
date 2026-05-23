@@ -10,3 +10,4 @@ TestResults/
 # Keep internal blueprint docs only in the local workspace.
 _private/
 
+/.config/opencode
