@@ -309,6 +309,66 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that a payment-timeout expiration expires the booking and publishes ticket release.
+    /// </summary>
+    [Fact]
+    public async Task BookingPaymentTimeoutExpiredEvent_Should_Invoke_ExpireBooking_And_Publish_ReleaseTickets()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var expiredAt = new DateTimeOffset(2026, 5, 23, 12, 15, 0, TimeSpan.Zero);
+        var bus = new TestMessageContext();
+
+        bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Success());
+
+        var result = await BookingLifecycleSagaHandler.Handle(
+            new BookingPaymentTimeoutExpiredEvent(
+                bookingId,
+                expiredAt,
+                eventId,
+                2),
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(bus.Invoked, x =>
+            x is Envelope { Message: ExpireBookingCommand invoked } &&
+            invoked.BookingId == bookingId);
+        Assert.Contains(bus.Published, x =>
+            x is Envelope { Message: ReleaseTicketsCommand published } &&
+            published.BookingId == bookingId &&
+            published.EventId == eventId &&
+            published.Quantity == 2);
+    }
+
+    /// <summary>
+    /// Verifies the current baseline late-message behavior before saga state guards are introduced.
+    /// </summary>
+    [Fact]
+    public async Task PaymentSucceededEvent_After_Timeout_Baseline_Still_Invokes_ConfirmBookingCommand()
+    {
+        var bookingId = Guid.NewGuid();
+        var bus = new TestMessageContext();
+
+        bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Success());
+
+        var result = await BookingLifecycleSagaHandler.Handle(
+            new PaymentSucceededEvent(
+                bookingId,
+                Guid.NewGuid(),
+                new DateTimeOffset(2026, 5, 23, 12, 20, 0, TimeSpan.Zero)),
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(bus.Invoked, x =>
+            x is Envelope { Message: ConfirmBookingCommand invoked } &&
+            invoked.BookingId == bookingId);
+    }
+
+    /// <summary>
     /// Verifies that the Bookings module maps the baseline booking lifecycle endpoint.
     /// </summary>
     [Fact]
