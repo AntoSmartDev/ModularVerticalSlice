@@ -8,13 +8,13 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequ
 internal static class BookingValidators
 {
     /// <summary>
-    /// Validates the baseline booking request command contract.
+    /// Validates the baseline create-booking command contract.
     /// </summary>
     /// <param name="command">The command to validate.</param>
     /// <returns>
     /// A successful result when the command is valid; otherwise a validation failure.
     /// </returns>
-    public static Result Validate(RequestBookingCommand command)
+    public static Result Validate(CreateBookingCommand command)
     {
         if (command.EventId == Guid.Empty)
         {
@@ -42,4 +42,10 @@ internal static class BookingValidators
 
         return Result.Success();
     }
+
+    /// <summary>
+    /// Validates the transitional request-booking alias using the canonical create-booking rules.
+    /// </summary>
+    public static Result Validate(RequestBookingCommand command) =>
+        Validate((CreateBookingCommand)command);
 }
