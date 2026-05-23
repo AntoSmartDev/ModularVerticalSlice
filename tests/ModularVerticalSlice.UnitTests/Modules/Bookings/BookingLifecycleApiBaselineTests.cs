@@ -8,6 +8,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using BookingLifecycleHandlerAlias = ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle.BookingLifecycleHandler;
@@ -157,6 +158,50 @@ public class BookingLifecycleApiBaselineTests
         Assert.Equal("user-1", created.UserId);
         Assert.Equal(2, created.Quantity);
         Assert.Equal(createdAt, created.CreatedAt);
+    }
+
+    /// <summary>
+    /// Verifies the shape of the payment command and booking payment-timeout event.
+    /// </summary>
+    [Fact]
+    public void BookingLifecycle_Saga_Contracts_Should_Expose_Stable_Shape()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var expiredAt = new DateTimeOffset(2026, 5, 23, 12, 30, 0, TimeSpan.Zero);
+
+        var processPayment = new ProcessPaymentCommand(
+            bookingId,
+            eventId,
+            "user-1",
+            2);
+        var timeoutExpired = new BookingPaymentTimeoutExpiredEvent(
+            bookingId,
+            expiredAt);
+
+        Assert.Equal(bookingId, processPayment.BookingId);
+        Assert.Equal(eventId, processPayment.EventId);
+        Assert.Equal("user-1", processPayment.UserId);
+        Assert.Equal(2, processPayment.Quantity);
+
+        Assert.Equal(bookingId, timeoutExpired.BookingId);
+        Assert.Equal(expiredAt, timeoutExpired.ExpiredAt);
+    }
+
+    /// <summary>
+    /// Verifies that the saga baseline accepts the initial booking-created handoff.
+    /// </summary>
+    [Fact]
+    public async Task BookingLifecycleSagaHandler_Should_Accept_BookingCreatedEvent()
+    {
+        var message = new BookingCreatedEvent(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            "user-1",
+            2,
+            new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero));
+
+        await BookingLifecycleSagaHandler.Handle(message, CancellationToken.None);
     }
 
     /// <summary>
