@@ -4,8 +4,13 @@ using ModularVerticalSlice.Application.Shared.Modules;
 using ModularVerticalSlice.Application.Modules.Notifications;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Persistence;
+using Wolverine;
+using Wolverine.Postgresql;
 
 var builder = WebApplication.CreateBuilder(args);
+var connectionString =
+    builder.Configuration.GetConnectionString("Database") ??
+    "Host=localhost;Port=5432;Database=modularverticalslice;Username=postgres;Password=postgres";
 
 IModule[] modules =
 [
@@ -14,6 +19,14 @@ IModule[] modules =
     new PaymentsModule(),
     new NotificationsModule()
 ];
+
+builder.Host.UseWolverine(options =>
+{
+    options.Policies.AutoApplyTransactions();
+    options
+        .PersistMessagesWithPostgresql(connectionString, "messaging")
+        .EnableMessageTransport(_ => { });
+});
 
 builder.Services.AddApplicationModules(builder.Configuration, modules);
 builder.Services.AddPersistence(builder.Configuration);
