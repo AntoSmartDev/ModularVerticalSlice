@@ -1,4 +1,6 @@
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Payments.Messages;
+using Wolverine;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
@@ -12,9 +14,10 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 /// </remarks>
 public static class BookingLifecycleSagaHandler
 {
+    private static readonly TimeSpan PaymentTimeout = TimeSpan.FromMinutes(15);
+
     /// <summary>
-    /// Handles the initial booking-created event that will later start the
-    /// durable booking lifecycle saga.
+    /// Transitional overload kept to preserve the pre-runtime baseline tests.
     /// </summary>
     public static Task Handle(
         BookingCreatedEvent message,
@@ -24,5 +27,35 @@ public static class BookingLifecycleSagaHandler
         cancellationToken.ThrowIfCancellationRequested();
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Handles the initial booking-created event and starts the durable booking
+    /// lifecycle runtime through Wolverine.
+    /// </summary>
+    public static async Task Handle(
+        BookingCreatedEvent message,
+        IMessageBus bus,
+        TimeProvider timeProvider)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(bus);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var expiresAt = timeProvider.GetUtcNow().Add(PaymentTimeout);
+
+        await bus.ScheduleAsync(
+            new BookingPaymentTimeoutExpiredEvent(
+                message.BookingId,
+                expiresAt),
+            expiresAt,
+            new DeliveryOptions());
+
+        await bus.PublishAsync(
+            new ProcessPaymentCommand(
+                message.BookingId,
+                message.EventId,
+                message.UserId,
+                message.Quantity));
     }
 }
