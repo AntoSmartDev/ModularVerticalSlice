@@ -1,4 +1,4 @@
-using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+﻿using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.SharedKernel;
@@ -49,7 +49,9 @@ public static class BookingLifecycleSagaHandler
         await bus.ScheduleAsync(
             new BookingPaymentTimeoutExpiredEvent(
                 message.BookingId,
-                expiresAt),
+                expiresAt,
+                message.EventId,
+                message.Quantity),
             expiresAt,
             new DeliveryOptions());
 
@@ -103,6 +105,35 @@ public static class BookingLifecycleSagaHandler
             new ReleaseTicketsCommand(
                 eventId,
                 quantity,
+                message.BookingId));
+
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Handles booking payment timeout expiration for the current booking saga.
+    /// </summary>
+    public static async Task<Result> Handle(
+        BookingPaymentTimeoutExpiredEvent message,
+        IMessageBus bus,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(bus);
+
+        var expireResult = await bus.InvokeAsync<Result>(
+            new ExpireBookingCommand(message.BookingId),
+            cancellationToken);
+
+        if (expireResult.IsFailure)
+        {
+            return expireResult;
+        }
+
+        await bus.PublishAsync(
+            new ReleaseTicketsCommand(
+                message.EventId,
+                message.Quantity,
                 message.BookingId));
 
         return Result.Success();

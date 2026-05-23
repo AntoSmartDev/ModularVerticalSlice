@@ -9,6 +9,10 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Messages;
 /// </remarks>
 /// <param name="BookingId">The affected booking identifier.</param>
 /// <param name="ExpiredAt">The instant when the payment window expired.</param>
+/// <param name="EventId">The related catalog event identifier.</param>
+/// <param name="Quantity">The reserved ticket quantity to release if the booking expires.</param>
 public sealed record BookingPaymentTimeoutExpiredEvent(
     Guid BookingId,
-    DateTimeOffset ExpiredAt);
+    DateTimeOffset ExpiredAt,
+    Guid EventId = default,
+    int Quantity = 0);
