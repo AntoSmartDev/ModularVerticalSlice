@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
@@ -15,15 +16,15 @@ using CatalogEventHandlerAlias = ModularVerticalSlice.Application.Modules.Catalo
 namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
 
 /// <summary>
-/// Verifies the baseline Bookings request API behavior and wiring.
+/// Verifies the baseline Bookings lifecycle API behavior and wiring.
 /// </summary>
 public class BookingLifecycleApiBaselineTests
 {
     /// <summary>
-    /// Verifies that a booking request creates a pending booking owned by the current user.
+    /// Verifies that a create-booking request creates a pending booking owned by the current user.
     /// </summary>
     [Fact]
-    public async Task RequestBooking_Should_Create_Pending_Booking()
+    public async Task CreateBooking_Should_Create_Pending_Booking()
     {
         await using var db = CreateDbContext();
         var userContext = new FakeCurrentUserContext("user-1");
@@ -61,7 +62,7 @@ public class BookingLifecycleApiBaselineTests
     /// Verifies that the same user and client request identifier return the existing booking.
     /// </summary>
     [Fact]
-    public async Task RequestBooking_Should_Return_Existing_Booking_When_ClientRequestId_Is_Duplicated()
+    public async Task CreateBooking_Should_Return_Existing_Booking_When_ClientRequestId_Is_Duplicated()
     {
         await using var db = CreateDbContext();
         var bookingId = Guid.NewGuid();
@@ -133,10 +134,36 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
-    /// Verifies that the Bookings module maps the baseline booking request endpoint.
+    /// Verifies the shape of the lifecycle commands and the booking-created event.
     /// </summary>
     [Fact]
-    public void BookingsModule_Should_Map_Baseline_Booking_Request_Endpoint()
+    public void BookingLifecycle_Contracts_Should_Expose_Stable_Shape()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var createdAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero);
+
+        var confirm = new ConfirmBookingCommand(bookingId);
+        var cancel = new CancelBookingCommand(bookingId);
+        var expire = new ExpireBookingCommand(bookingId);
+        var created = new BookingCreatedEvent(bookingId, eventId, "user-1", 2, createdAt);
+
+        Assert.Equal(bookingId, confirm.BookingId);
+        Assert.Equal(bookingId, cancel.BookingId);
+        Assert.Equal(bookingId, expire.BookingId);
+
+        Assert.Equal(bookingId, created.BookingId);
+        Assert.Equal(eventId, created.EventId);
+        Assert.Equal("user-1", created.UserId);
+        Assert.Equal(2, created.Quantity);
+        Assert.Equal(createdAt, created.CreatedAt);
+    }
+
+    /// <summary>
+    /// Verifies that the Bookings module maps the baseline booking lifecycle endpoint.
+    /// </summary>
+    [Fact]
+    public void BookingsModule_Should_Map_Baseline_Booking_Lifecycle_Endpoint()
     {
         var builder = WebApplication.CreateBuilder();
         var module = new BookingsModule();
