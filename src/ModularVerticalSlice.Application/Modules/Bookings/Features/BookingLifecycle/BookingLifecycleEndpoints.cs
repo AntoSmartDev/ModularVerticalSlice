@@ -3,15 +3,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using ModularVerticalSlice.Application.Shared.Http;
 
-namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
 /// <summary>
-/// Maps the baseline HTTP endpoints exposed by the Bookings request feature.
+/// Maps the baseline HTTP endpoints exposed by the Bookings lifecycle feature.
 /// </summary>
-public static class BookingEndpoints
+public static class BookingLifecycleEndpoints
 {
     /// <summary>
-    /// Maps the Bookings request endpoints.
+    /// Maps the Bookings lifecycle endpoints.
     /// </summary>
     public static IEndpointRouteBuilder Map(IEndpointRouteBuilder endpoints)
     {
@@ -30,7 +30,7 @@ public static class BookingEndpoints
 
     private static async Task<IResult> CreateBookingAsync(
         CreateBookingCommand command,
-        BookingHandler handler,
+        BookingLifecycleHandler handler,
         CancellationToken cancellationToken)
     {
         var result = await handler.Handle(command, cancellationToken);

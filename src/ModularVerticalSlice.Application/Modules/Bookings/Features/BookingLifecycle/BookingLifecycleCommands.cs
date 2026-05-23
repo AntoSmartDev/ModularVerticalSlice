@@ -1,4 +1,4 @@
-namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
 /// <summary>
 /// Creates a new booking for a catalog event.

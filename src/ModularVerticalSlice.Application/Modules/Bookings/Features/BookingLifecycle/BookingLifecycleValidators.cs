@@ -1,11 +1,11 @@
 using ModularVerticalSlice.SharedKernel;
 
-namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
 /// <summary>
-/// Contains validation rules for the Bookings request baseline.
+/// Contains validation rules for the Bookings lifecycle baseline.
 /// </summary>
-internal static class BookingValidators
+internal static class BookingLifecycleValidators
 {
     /// <summary>
     /// Validates the baseline create-booking command contract.

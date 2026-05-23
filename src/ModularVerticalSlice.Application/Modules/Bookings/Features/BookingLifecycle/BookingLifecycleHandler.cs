@@ -6,17 +6,17 @@ using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
 using CatalogEventHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
 
-namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
 /// <summary>
-/// Handles Bookings request commands for the baseline booking flow.
+/// Handles Bookings lifecycle commands for the baseline booking flow.
 /// </summary>
 /// <remarks>
 /// This handler uses only Bookings mini DbContext contracts and shared module
 /// abstractions. It must not depend on the concrete AppDbContext and must not
 /// call SaveChangesAsync directly.
 /// </remarks>
-public sealed class BookingHandler(
+public sealed class BookingLifecycleHandler(
     IBookingWriteDbContext writeDb,
     CatalogEventHandler catalogHandler,
     ICurrentUserContext currentUserContext,
@@ -29,7 +29,7 @@ public sealed class BookingHandler(
         CreateBookingCommand command,
         CancellationToken cancellationToken)
     {
-        var validation = BookingValidators.Validate(command);
+        var validation = BookingLifecycleValidators.Validate(command);
         if (validation.IsFailure)
         {
             return Result.Failure<Guid>(validation.Error);

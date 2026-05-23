@@ -3,13 +3,13 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ModularVerticalSlice.Application.Modules.Bookings;
-using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
-using BookingHandlerAlias = ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest.BookingHandler;
+using BookingLifecycleHandlerAlias = ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle.BookingLifecycleHandler;
 using CatalogEventHandlerAlias = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
@@ -17,7 +17,7 @@ namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
 /// <summary>
 /// Verifies the baseline Bookings request API behavior and wiring.
 /// </summary>
-public class BookingRequestApiBaselineTests
+public class BookingLifecycleApiBaselineTests
 {
     /// <summary>
     /// Verifies that a booking request creates a pending booking owned by the current user.
@@ -167,7 +167,7 @@ public class BookingRequestApiBaselineTests
         return new AppDbContext(options);
     }
 
-    private static BookingHandlerAlias CreateHandler(
+    private static BookingLifecycleHandlerAlias CreateHandler(
         AppDbContext db,
         ICurrentUserContext currentUserContext,
         TimeProvider? timeProvider = null) =>
