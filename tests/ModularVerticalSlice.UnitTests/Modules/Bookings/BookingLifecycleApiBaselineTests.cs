@@ -425,6 +425,98 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that a late payment failure is ignored after the booking has already been confirmed.
+    /// </summary>
+    [Fact]
+    public async Task PaymentFailedEvent_After_Confirmation_Should_Be_Ignored()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            Status = BookingStatus.Confirmed,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Success());
+
+        var result = await BookingLifecycleSagaHandler.Handle(
+            new PaymentFailedEvent(
+                bookingId,
+                Guid.NewGuid(),
+                "Declined",
+                new DateTimeOffset(2026, 5, 23, 12, 25, 0, TimeSpan.Zero)),
+            eventId,
+            2,
+            db,
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.DoesNotContain(bus.Invoked, x =>
+            x is Envelope { Message: CancelBookingCommand invoked } &&
+            invoked.BookingId == bookingId);
+        Assert.DoesNotContain(bus.Published, x =>
+            x is Envelope { Message: ReleaseTicketsCommand published } &&
+            published.BookingId == bookingId);
+    }
+
+    /// <summary>
+    /// Verifies that a late timeout is ignored after the booking has already been confirmed.
+    /// </summary>
+    [Fact]
+    public async Task BookingPaymentTimeoutExpiredEvent_After_Confirmation_Should_Be_Ignored()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            Status = BookingStatus.Confirmed,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Success());
+
+        var result = await BookingLifecycleSagaHandler.Handle(
+            new BookingPaymentTimeoutExpiredEvent(
+                bookingId,
+                new DateTimeOffset(2026, 5, 23, 12, 30, 0, TimeSpan.Zero),
+                eventId,
+                2),
+            db,
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.DoesNotContain(bus.Invoked, x =>
+            x is Envelope { Message: ExpireBookingCommand invoked } &&
+            invoked.BookingId == bookingId);
+        Assert.DoesNotContain(bus.Published, x =>
+            x is Envelope { Message: ReleaseTicketsCommand published } &&
+            published.BookingId == bookingId);
+    }
+
+    /// <summary>
     /// Verifies that the Bookings module maps the baseline booking lifecycle endpoint.
     /// </summary>
     [Fact]
