@@ -218,6 +218,97 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that the durable saga baseline publishes payment processing and schedules the timeout.
+    /// </summary>
+    [Fact]
+    public async Task BookingLifecycleSagaHandler_Should_PublishPaymentCommand_And_ScheduleTimeout()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var createdAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero);
+        var bus = new TestMessageContext();
+        var timeProvider = new FixedTimeProvider(createdAt);
+
+        await BookingLifecycleSagaHandler.Handle(
+            new BookingCreatedEvent(bookingId, eventId, "user-1", 2, createdAt),
+            bus,
+            timeProvider);
+
+        Assert.Contains(bus.Published, x =>
+            x is Envelope { Message: ProcessPaymentCommand published } &&
+            published.BookingId == bookingId &&
+            published.EventId == eventId &&
+            published.UserId == "user-1" &&
+            published.Quantity == 2);
+
+        Assert.Contains(bus.ScheduledMessages(), x =>
+            x.Message is BookingPaymentTimeoutExpiredEvent scheduled &&
+            scheduled.BookingId == bookingId &&
+            scheduled.ExpiredAt == createdAt.AddMinutes(15));
+    }
+
+    /// <summary>
+    /// Verifies that a successful payment leads the saga to invoke booking confirmation.
+    /// </summary>
+    [Fact]
+    public async Task PaymentSucceededEvent_Should_Invoke_ConfirmBookingCommand()
+    {
+        var bookingId = Guid.NewGuid();
+        var bus = new TestMessageContext();
+
+        bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Success());
+
+        var result = await BookingLifecycleSagaHandler.Handle(
+            new PaymentSucceededEvent(
+                bookingId,
+                Guid.NewGuid(),
+                new DateTimeOffset(2026, 5, 23, 12, 5, 0, TimeSpan.Zero)),
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(bus.Invoked, x =>
+            x is Envelope { Message: ConfirmBookingCommand invoked } &&
+            invoked.BookingId == bookingId);
+    }
+
+    /// <summary>
+    /// Verifies that a failed payment leads the saga to cancel the booking and release tickets.
+    /// </summary>
+    [Fact]
+    public async Task PaymentFailedEvent_Should_Invoke_CancelBooking_And_Publish_ReleaseTickets()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var bus = new TestMessageContext();
+
+        bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Success());
+
+        var result = await BookingLifecycleSagaHandler.Handle(
+            new PaymentFailedEvent(
+                bookingId,
+                Guid.NewGuid(),
+                "Declined",
+                new DateTimeOffset(2026, 5, 23, 12, 10, 0, TimeSpan.Zero)),
+            eventId,
+            3,
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(bus.Invoked, x =>
+            x is Envelope { Message: CancelBookingCommand invoked } &&
+            invoked.BookingId == bookingId);
+        Assert.Contains(bus.Published, x =>
+            x is Envelope { Message: ReleaseTicketsCommand published } &&
+            published.BookingId == bookingId &&
+            published.EventId == eventId &&
+            published.Quantity == 3);
+    }
+
+    /// <summary>
     /// Verifies that the Bookings module maps the baseline booking lifecycle endpoint.
     /// </summary>
     [Fact]
