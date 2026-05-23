@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Security;
@@ -77,6 +78,17 @@ public sealed class BookingLifecycleHandler(
         }
 
         writeDb.Bookings.Add(booking);
+
+        var bookingCreated = new BookingCreatedEvent(
+            booking.Id,
+            booking.EventId,
+            booking.UserId,
+            booking.Quantity,
+            booking.CreatedAt);
+
+        await BookingLifecycleSagaHandler.Handle(
+            bookingCreated,
+            cancellationToken);
 
         return booking.Id;
     }
