@@ -254,7 +254,20 @@ public class BookingLifecycleApiBaselineTests
     public async Task PaymentSucceededEvent_Should_Invoke_ConfirmBookingCommand()
     {
         var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
         var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = Guid.NewGuid(),
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
 
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -264,6 +277,7 @@ public class BookingLifecycleApiBaselineTests
                 bookingId,
                 Guid.NewGuid(),
                 new DateTimeOffset(2026, 5, 23, 12, 5, 0, TimeSpan.Zero)),
+            db,
             bus,
             CancellationToken.None);
 
@@ -281,7 +295,20 @@ public class BookingLifecycleApiBaselineTests
     {
         var bookingId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
+        await using var db = CreateDbContext();
         var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 3,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
 
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -294,6 +321,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 10, 0, TimeSpan.Zero)),
             eventId,
             3,
+            db,
             bus,
             CancellationToken.None);
 
@@ -317,7 +345,20 @@ public class BookingLifecycleApiBaselineTests
         var bookingId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
         var expiredAt = new DateTimeOffset(2026, 5, 23, 12, 15, 0, TimeSpan.Zero);
+        await using var db = CreateDbContext();
         var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
 
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -328,6 +369,7 @@ public class BookingLifecycleApiBaselineTests
                 expiredAt,
                 eventId,
                 2),
+            db,
             bus,
             CancellationToken.None);
 
@@ -346,10 +388,23 @@ public class BookingLifecycleApiBaselineTests
     /// Verifies the current baseline late-message behavior before saga state guards are introduced.
     /// </summary>
     [Fact]
-    public async Task PaymentSucceededEvent_After_Timeout_Baseline_Still_Invokes_ConfirmBookingCommand()
+    public async Task PaymentSucceededEvent_After_Timeout_Should_Be_Ignored()
     {
         var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
         var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = Guid.NewGuid(),
+            Quantity = 2,
+            Status = BookingStatus.Expired,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
 
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -359,11 +414,12 @@ public class BookingLifecycleApiBaselineTests
                 bookingId,
                 Guid.NewGuid(),
                 new DateTimeOffset(2026, 5, 23, 12, 20, 0, TimeSpan.Zero)),
+            db,
             bus,
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Contains(bus.Invoked, x =>
+        Assert.DoesNotContain(bus.Invoked, x =>
             x is Envelope { Message: ConfirmBookingCommand invoked } &&
             invoked.BookingId == bookingId);
     }

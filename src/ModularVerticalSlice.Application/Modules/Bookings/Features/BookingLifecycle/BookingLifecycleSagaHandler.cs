@@ -1,4 +1,7 @@
-﻿using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.SharedKernel;
@@ -68,16 +71,16 @@ public static class BookingLifecycleSagaHandler
     /// </summary>
     public static Task<Result> Handle(
         PaymentSucceededEvent message,
+        IBookingReadDbContext readDb,
         IMessageBus bus,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(message);
-        ArgumentNullException.ThrowIfNull(bus);
-
-        return bus.InvokeAsync<Result>(
-            new ConfirmBookingCommand(message.BookingId),
-            cancellationToken);
-    }
+        CancellationToken cancellationToken) =>
+        HandleWhenBookingIsPendingAsync(
+            message.BookingId,
+            readDb,
+            cancellationToken,
+            () => bus.InvokeAsync<Result>(
+                new ConfirmBookingCommand(message.BookingId),
+                cancellationToken));
 
     /// <summary>
     /// Handles the business failure of payment for the current booking saga.
@@ -86,11 +89,28 @@ public static class BookingLifecycleSagaHandler
         PaymentFailedEvent message,
         Guid eventId,
         int quantity,
+        IBookingReadDbContext readDb,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(readDb);
         ArgumentNullException.ThrowIfNull(bus);
+
+        var canProceed = await EnsureBookingIsPendingAsync(
+            message.BookingId,
+            readDb,
+            cancellationToken);
+
+        if (canProceed.IsFailure)
+        {
+            return canProceed;
+        }
+
+        if (!canProceed.Value)
+        {
+            return Result.Success();
+        }
 
         var cancelResult = await bus.InvokeAsync<Result>(
             new CancelBookingCommand(message.BookingId),
@@ -115,11 +135,28 @@ public static class BookingLifecycleSagaHandler
     /// </summary>
     public static async Task<Result> Handle(
         BookingPaymentTimeoutExpiredEvent message,
+        IBookingReadDbContext readDb,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(message);
+        ArgumentNullException.ThrowIfNull(readDb);
         ArgumentNullException.ThrowIfNull(bus);
+
+        var canProceed = await EnsureBookingIsPendingAsync(
+            message.BookingId,
+            readDb,
+            cancellationToken);
+
+        if (canProceed.IsFailure)
+        {
+            return canProceed;
+        }
+
+        if (!canProceed.Value)
+        {
+            return Result.Success();
+        }
 
         var expireResult = await bus.InvokeAsync<Result>(
             new ExpireBookingCommand(message.BookingId),
@@ -137,5 +174,52 @@ public static class BookingLifecycleSagaHandler
                 message.BookingId));
 
         return Result.Success();
+    }
+
+    private static async Task<Result> HandleWhenBookingIsPendingAsync(
+        Guid bookingId,
+        IBookingReadDbContext readDb,
+        CancellationToken cancellationToken,
+        Func<Task<Result>> action)
+    {
+        ArgumentNullException.ThrowIfNull(readDb);
+        ArgumentNullException.ThrowIfNull(action);
+
+        var canProceed = await EnsureBookingIsPendingAsync(
+            bookingId,
+            readDb,
+            cancellationToken);
+
+        if (canProceed.IsFailure)
+        {
+            return Result.Failure(canProceed.Error);
+        }
+
+        if (!canProceed.Value)
+        {
+            return Result.Success();
+        }
+
+        return await action();
+    }
+
+    private static async Task<Result<bool>> EnsureBookingIsPendingAsync(
+        Guid bookingId,
+        IBookingReadDbContext readDb,
+        CancellationToken cancellationToken)
+    {
+        var bookingStatus = await readDb.Bookings
+            .Where(x => x.Id == bookingId)
+            .Select(x => (BookingStatus?)x.Status)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (bookingStatus is null)
+        {
+            return Error.NotFound(
+                "Bookings.BookingNotFound",
+                "The target booking was not found.");
+        }
+
+        return bookingStatus == BookingStatus.Pending;
     }
 }
