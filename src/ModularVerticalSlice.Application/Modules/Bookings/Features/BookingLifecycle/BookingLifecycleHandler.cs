@@ -5,7 +5,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
-using CatalogEventHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
+using Wolverine;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
@@ -19,7 +19,7 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 /// </remarks>
 public sealed class BookingLifecycleHandler(
     IBookingWriteDbContext writeDb,
-    CatalogEventHandler catalogHandler,
+    IMessageBus bus,
     ICurrentUserContext currentUserContext,
     TimeProvider timeProvider)
 {
@@ -65,7 +65,7 @@ public sealed class BookingLifecycleHandler(
             CreatedAt = timeProvider.GetUtcNow()
         };
 
-        var reserveTicketsResult = await catalogHandler.Handle(
+        var reserveTicketsResult = await bus.InvokeAsync<Result>(
             new ReserveTicketsCommand(
                 command.EventId,
                 command.Quantity,
@@ -86,9 +86,7 @@ public sealed class BookingLifecycleHandler(
             booking.Quantity,
             booking.CreatedAt);
 
-        await BookingLifecycleSagaHandler.Handle(
-            bookingCreated,
-            cancellationToken);
+        await bus.PublishAsync(bookingCreated);
 
         return booking.Id;
     }

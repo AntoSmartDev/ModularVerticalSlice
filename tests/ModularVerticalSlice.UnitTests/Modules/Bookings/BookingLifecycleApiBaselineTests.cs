@@ -1,18 +1,17 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
-using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
-using BookingLifecycleHandlerAlias = ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle.BookingLifecycleHandler;
-using CatalogEventHandlerAlias = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
+using ModularVerticalSlice.SharedKernel;
+using Wolverine;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
 
@@ -29,7 +28,6 @@ public class BookingLifecycleApiBaselineTests
     {
         await using var db = CreateDbContext();
         var userContext = new FakeCurrentUserContext("user-1");
-        var handler = CreateHandler(db, userContext);
         var eventId = Guid.NewGuid();
 
         db.Events.Add(new Event
@@ -43,6 +41,8 @@ public class BookingLifecycleApiBaselineTests
         await db.SaveChangesAsync();
 
         var command = new CreateBookingCommand(eventId, 2, Guid.NewGuid());
+        var bus = CreateMessageBus(command, Result.Success());
+        var handler = CreateHandler(db, bus, userContext);
 
         var result = await handler.Handle(command, CancellationToken.None);
 
@@ -56,7 +56,9 @@ public class BookingLifecycleApiBaselineTests
         Assert.Equal(command.ClientRequestId, booking.ClientRequestId);
         Assert.Equal("user-1", booking.UserId);
         Assert.Equal(BookingStatus.Pending, booking.Status);
-        Assert.Equal(8, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+        Assert.Equal(10, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+        Assert.Contains(bus.Invoked, x => x is Envelope { Message: ReserveTicketsCommand invoked } && invoked.EventId == eventId);
+        Assert.Contains(bus.Published, x => x is Envelope { Message: BookingCreatedEvent published } && published.BookingId == booking.Id);
     }
 
     /// <summary>
@@ -91,7 +93,10 @@ public class BookingLifecycleApiBaselineTests
         });
         await db.SaveChangesAsync();
 
-        var handler = CreateHandler(db, new FakeCurrentUserContext("user-1"));
+        var bus = CreateMessageBus(
+            new CreateBookingCommand(eventId, 3, clientRequestId),
+            Result.Success());
+        var handler = CreateHandler(db, bus, new FakeCurrentUserContext("user-1"));
 
         var result = await handler.Handle(
             new CreateBookingCommand(eventId, 3, clientRequestId),
@@ -122,16 +127,24 @@ public class BookingLifecycleApiBaselineTests
         });
         await db.SaveChangesAsync();
 
-        var handler = CreateHandler(db, new FakeCurrentUserContext("user-1"));
+        var command = new CreateBookingCommand(eventId, 2, Guid.NewGuid());
+        var bus = CreateMessageBus(
+            command,
+            Result.Failure(
+                Error.Conflict(
+                    "Catalog.NotEnoughTickets",
+                    "Not enough tickets are available.")));
+        var handler = CreateHandler(db, bus, new FakeCurrentUserContext("user-1"));
 
         var result = await handler.Handle(
-            new CreateBookingCommand(eventId, 2, Guid.NewGuid()),
+            command,
             CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
         Assert.Empty(db.ChangeTracker.Entries<Booking>());
         Assert.Equal(1, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+        Assert.Empty(bus.Published);
     }
 
     /// <summary>
@@ -239,23 +252,29 @@ public class BookingLifecycleApiBaselineTests
         return new AppDbContext(options);
     }
 
-    private static BookingLifecycleHandlerAlias CreateHandler(
+    private static BookingLifecycleHandler CreateHandler(
         AppDbContext db,
+        TestMessageContext bus,
         ICurrentUserContext currentUserContext,
         TimeProvider? timeProvider = null) =>
         new(
             db,
-            CreateCatalogHandler(db, timeProvider),
+            bus,
             currentUserContext,
             timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
 
-    private static CatalogEventHandlerAlias CreateCatalogHandler(
-        AppDbContext db,
-        TimeProvider? timeProvider = null) =>
-        new(
-            db,
-            db,
-            timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
+    private static TestMessageContext CreateMessageBus(
+        CreateBookingCommand command,
+        Result reserveTicketsResult)
+    {
+        var bus = new TestMessageContext();
+        bus.WhenInvokedMessageOf<ReserveTicketsCommand>(x =>
+                x.EventId == command.EventId &&
+                x.Quantity == command.Quantity)
+            .RespondWith(reserveTicketsResult);
+
+        return bus;
+    }
 
     private sealed class FakeCurrentUserContext(string userId) : ICurrentUserContext
     {
