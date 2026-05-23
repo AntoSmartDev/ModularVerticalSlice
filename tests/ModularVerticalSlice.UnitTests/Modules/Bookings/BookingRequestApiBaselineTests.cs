@@ -4,10 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using BookingHandlerAlias = ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest.BookingHandler;
+using CatalogEventHandlerAlias = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
 
@@ -25,7 +28,19 @@ public class BookingRequestApiBaselineTests
         await using var db = CreateDbContext();
         var userContext = new FakeCurrentUserContext("user-1");
         var handler = CreateHandler(db, userContext);
-        var command = new RequestBookingCommand(Guid.NewGuid(), 2, Guid.NewGuid());
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "OpenAI Conf",
+            Date = new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 49.90m,
+            AvailableTickets = 10
+        });
+        await db.SaveChangesAsync();
+
+        var command = new CreateBookingCommand(eventId, 2, Guid.NewGuid());
 
         var result = await handler.Handle(command, CancellationToken.None);
 
@@ -39,6 +54,7 @@ public class BookingRequestApiBaselineTests
         Assert.Equal(command.ClientRequestId, booking.ClientRequestId);
         Assert.Equal("user-1", booking.UserId);
         Assert.Equal(BookingStatus.Pending, booking.Status);
+        Assert.Equal(8, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
     /// <summary>
@@ -51,6 +67,15 @@ public class BookingRequestApiBaselineTests
         var bookingId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
         var clientRequestId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Existing event",
+            Date = new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 25m,
+            AvailableTickets = 5
+        });
 
         db.Bookings.Add(new Booking
         {
@@ -67,12 +92,44 @@ public class BookingRequestApiBaselineTests
         var handler = CreateHandler(db, new FakeCurrentUserContext("user-1"));
 
         var result = await handler.Handle(
-            new RequestBookingCommand(eventId, 3, clientRequestId),
+            new CreateBookingCommand(eventId, 3, clientRequestId),
             CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(bookingId, result.Value);
         Assert.Single(db.Bookings);
+        Assert.Equal(5, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+    }
+
+    /// <summary>
+    /// Verifies that a booking is not created when ticket reservation fails in Catalog.
+    /// </summary>
+    [Fact]
+    public async Task CreateBooking_Should_Fail_When_ReserveTickets_Fails()
+    {
+        await using var db = CreateDbContext();
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Limited event",
+            Date = new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 20m,
+            AvailableTickets = 1
+        });
+        await db.SaveChangesAsync();
+
+        var handler = CreateHandler(db, new FakeCurrentUserContext("user-1"));
+
+        var result = await handler.Handle(
+            new CreateBookingCommand(eventId, 2, Guid.NewGuid()),
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
+        Assert.Empty(db.ChangeTracker.Entries<Booking>());
+        Assert.Equal(1, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
     /// <summary>
@@ -116,7 +173,16 @@ public class BookingRequestApiBaselineTests
         TimeProvider? timeProvider = null) =>
         new(
             db,
+            CreateCatalogHandler(db, timeProvider),
             currentUserContext,
+            timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
+
+    private static CatalogEventHandlerAlias CreateCatalogHandler(
+        AppDbContext db,
+        TimeProvider? timeProvider = null) =>
+        new(
+            db,
+            db,
             timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
 
     private sealed class FakeCurrentUserContext(string userId) : ICurrentUserContext

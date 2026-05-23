@@ -1,8 +1,10 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
+using CatalogEventHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequest;
 
@@ -16,6 +18,7 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingRequ
 /// </remarks>
 public sealed class BookingHandler(
     IBookingWriteDbContext writeDb,
+    CatalogEventHandler catalogHandler,
     ICurrentUserContext currentUserContext,
     TimeProvider timeProvider)
 {
@@ -23,7 +26,7 @@ public sealed class BookingHandler(
     /// Handles the creation of a baseline pending booking.
     /// </summary>
     public async Task<Result<Guid>> Handle(
-        RequestBookingCommand command,
+        CreateBookingCommand command,
         CancellationToken cancellationToken)
     {
         var validation = BookingValidators.Validate(command);
@@ -61,8 +64,28 @@ public sealed class BookingHandler(
             CreatedAt = timeProvider.GetUtcNow()
         };
 
+        var reserveTicketsResult = await catalogHandler.Handle(
+            new ReserveTicketsCommand(
+                command.EventId,
+                command.Quantity,
+                booking.Id),
+            cancellationToken);
+
+        if (reserveTicketsResult.IsFailure)
+        {
+            return Result.Failure<Guid>(reserveTicketsResult.Error);
+        }
+
         writeDb.Bookings.Add(booking);
 
         return booking.Id;
     }
+
+    /// <summary>
+    /// Handles the transitional request-booking alias.
+    /// </summary>
+    public Task<Result<Guid>> Handle(
+        RequestBookingCommand command,
+        CancellationToken cancellationToken) =>
+        Handle((CreateBookingCommand)command, cancellationToken);
 }

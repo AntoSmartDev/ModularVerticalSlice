@@ -29,7 +29,7 @@ public static class BookingEndpoints
     }
 
     private static async Task<IResult> CreateBookingAsync(
-        RequestBookingCommand command,
+        CreateBookingCommand command,
         BookingHandler handler,
         CancellationToken cancellationToken)
     {
