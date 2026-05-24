@@ -1,0 +1,17 @@
+using ModularVerticalSlice.Application.Modules.Payments.Domain;
+
+namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
+
+/// <summary>
+/// Deterministic baseline gateway used until a real provider integration is
+/// introduced.
+/// </summary>
+public sealed class FakePaymentGateway : IPaymentGateway
+{
+    /// <summary>
+    /// Delegates the baseline payment outcome to the deterministic policy so
+    /// the first-release behavior stays stable.
+    /// </summary>
+    public PaymentOutcomeDecision Process(string userId, int quantity) =>
+        PaymentOutcomePolicy.Decide(userId, quantity);
+}
