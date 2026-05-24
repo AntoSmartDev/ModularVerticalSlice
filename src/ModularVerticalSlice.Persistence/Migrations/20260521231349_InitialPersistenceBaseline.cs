@@ -26,7 +26,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_bookings", x => x.Id);
-                    table.CheckConstraint("ck_bookings_quantity_positive", "quantity > 0");
+                    table.CheckConstraint("ck_bookings_quantity_positive", "\"Quantity\" > 0");
                 });
 
             migrationBuilder.CreateTable(
@@ -42,7 +42,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_events", x => x.Id);
-                    table.CheckConstraint("ck_events_available_tickets_non_negative", "available_tickets >= 0");
+                    table.CheckConstraint("ck_events_available_tickets_non_negative", "\"AvailableTickets\" >= 0");
                 });
 
             migrationBuilder.CreateTable(
@@ -59,7 +59,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_payments", x => x.Id);
-                    table.CheckConstraint("ck_payments_amount_positive", "amount > 0");
+                    table.CheckConstraint("ck_payments_amount_positive", "\"Amount\" > 0");
                 });
 
             migrationBuilder.CreateIndex(

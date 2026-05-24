@@ -62,7 +62,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
 
                     b.ToTable("bookings", null, t =>
                         {
-                            t.HasCheckConstraint("ck_bookings_quantity_positive", "quantity > 0");
+                            t.HasCheckConstraint("ck_bookings_quantity_positive", "\"Quantity\" > 0");
                         });
                 });
 
@@ -91,7 +91,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
 
                     b.ToTable("events", null, t =>
                         {
-                            t.HasCheckConstraint("ck_events_available_tickets_non_negative", "available_tickets >= 0");
+                            t.HasCheckConstraint("ck_events_available_tickets_non_negative", "\"AvailableTickets\" >= 0");
                         });
                 });
 
@@ -126,7 +126,7 @@ namespace ModularVerticalSlice.Persistence.Migrations
 
                     b.ToTable("payments", null, t =>
                         {
-                            t.HasCheckConstraint("ck_payments_amount_positive", "amount > 0");
+                            t.HasCheckConstraint("ck_payments_amount_positive", "\"Amount\" > 0");
                         });
                 });
 #pragma warning restore 612, 618

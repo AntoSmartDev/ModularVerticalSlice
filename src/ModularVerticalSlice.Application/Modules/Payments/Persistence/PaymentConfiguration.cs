@@ -20,7 +20,7 @@ public sealed class PaymentConfiguration : IEntityTypeConfiguration<Payment>
             "payments",
             tableBuilder => tableBuilder.HasCheckConstraint(
                 "ck_payments_amount_positive",
-                "amount > 0"));
+                "\"Amount\" > 0"));
 
         builder.HasKey(x => x.Id);
 

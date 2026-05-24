@@ -1,3 +1,4 @@
+using ModularVerticalSlice.Application.Modules.Bookings;
 using Wolverine;
 using Wolverine.Postgresql;
 
@@ -22,6 +23,7 @@ public static class ApplicationMessagingExtensions
     {
         var connectionString = configuration.GetConnectionString("Database") ?? DefaultConnectionString;
 
+        options.Discovery.IncludeAssembly(typeof(BookingsModule).Assembly);
         options.Policies.AutoApplyTransactions();
         options
             .PersistMessagesWithPostgresql(connectionString, "messaging")

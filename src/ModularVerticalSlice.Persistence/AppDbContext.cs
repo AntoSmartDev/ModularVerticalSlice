@@ -42,7 +42,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(EventConfiguration).Assembly);
 
         base.OnModelCreating(modelBuilder);

@@ -20,7 +20,7 @@ public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
             "bookings",
             tableBuilder => tableBuilder.HasCheckConstraint(
                 "ck_bookings_quantity_positive",
-                "quantity > 0"));
+                "\"Quantity\" > 0"));
 
         builder.HasKey(x => x.Id);
 

@@ -21,7 +21,7 @@ public sealed class EventConfiguration : IEntityTypeConfiguration<Event>
             "events",
             tableBuilder => tableBuilder.HasCheckConstraint(
                 "ck_events_available_tickets_non_negative",
-                "available_tickets >= 0"));
+                "\"AvailableTickets\" >= 0"));
 
         builder.HasKey(x => x.Id);
 
