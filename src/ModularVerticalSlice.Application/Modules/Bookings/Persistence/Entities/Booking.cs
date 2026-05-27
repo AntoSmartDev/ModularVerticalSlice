@@ -1,12 +1,13 @@
+using ModularVerticalSlice.SharedKernel;
+
 namespace ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 
 /// <summary>
 /// Represents a persisted booking owned by the Bookings module.
 /// </summary>
 /// <remarks>
-/// The first release baseline keeps only the data required to identify the
-/// booking, preserve idempotency and support the core booking lifecycle.
-/// Higher-level business behavior remains outside the persistence model.
+/// The first release baseline keeps the entity physically under persistence,
+/// but the entity can still own the natural transitions of the booking lifecycle.
 /// </remarks>
 public sealed class Booking
 {
@@ -44,6 +45,57 @@ public sealed class Booking
     /// Gets or sets the creation timestamp of the booking.
     /// </summary>
     public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+    /// Confirms the booking after successful payment completion.
+    /// </summary>
+    public Result Confirm()
+    {
+        if (Status != BookingStatus.Pending)
+        {
+            return Result.Failure(
+                Error.Conflict(
+                    "Bookings.InvalidConfirmation",
+                    "Only pending bookings can be confirmed."));
+        }
+
+        Status = BookingStatus.Confirmed;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Cancels the booking after a business failure or explicit decision.
+    /// </summary>
+    public Result Cancel()
+    {
+        if (Status != BookingStatus.Pending)
+        {
+            return Result.Failure(
+                Error.Conflict(
+                    "Bookings.InvalidCancellation",
+                    "Only pending bookings can be cancelled."));
+        }
+
+        Status = BookingStatus.Cancelled;
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Expires the booking after the payment window elapses.
+    /// </summary>
+    public Result Expire()
+    {
+        if (Status != BookingStatus.Pending)
+        {
+            return Result.Failure(
+                Error.Conflict(
+                    "Bookings.InvalidExpiration",
+                    "Only pending bookings can expire."));
+        }
+
+        Status = BookingStatus.Expired;
+        return Result.Success();
+    }
 }
 
 /// <summary>

@@ -175,6 +175,54 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that the Booking entity owns the natural lifecycle transitions.
+    /// </summary>
+    [Fact]
+    public void Booking_Should_Apply_Natural_Lifecycle_Transitions()
+    {
+        var pendingForConfirm = new Booking { Status = BookingStatus.Pending };
+        var pendingForCancel = new Booking { Status = BookingStatus.Pending };
+        var pendingForExpire = new Booking { Status = BookingStatus.Pending };
+
+        var confirmResult = pendingForConfirm.Confirm();
+        var cancelResult = pendingForCancel.Cancel();
+        var expireResult = pendingForExpire.Expire();
+
+        Assert.True(confirmResult.IsSuccess);
+        Assert.Equal(BookingStatus.Confirmed, pendingForConfirm.Status);
+
+        Assert.True(cancelResult.IsSuccess);
+        Assert.Equal(BookingStatus.Cancelled, pendingForCancel.Status);
+
+        Assert.True(expireResult.IsSuccess);
+        Assert.Equal(BookingStatus.Expired, pendingForExpire.Status);
+    }
+
+    /// <summary>
+    /// Verifies that non-pending bookings cannot transition again through the entity behavior.
+    /// </summary>
+    [Fact]
+    public void Booking_Should_Reject_Invalid_Lifecycle_Transitions()
+    {
+        var confirmed = new Booking { Status = BookingStatus.Confirmed };
+        var cancelled = new Booking { Status = BookingStatus.Cancelled };
+        var expired = new Booking { Status = BookingStatus.Expired };
+
+        var confirmResult = confirmed.Confirm();
+        var cancelResult = cancelled.Cancel();
+        var expireResult = expired.Expire();
+
+        Assert.True(confirmResult.IsFailure);
+        Assert.Equal("Bookings.InvalidConfirmation", confirmResult.Error.Code);
+
+        Assert.True(cancelResult.IsFailure);
+        Assert.Equal("Bookings.InvalidCancellation", cancelResult.Error.Code);
+
+        Assert.True(expireResult.IsFailure);
+        Assert.Equal("Bookings.InvalidExpiration", expireResult.Error.Code);
+    }
+
+    /// <summary>
     /// Verifies the shape of the payment command and booking payment-timeout event.
     /// </summary>
     [Fact]
