@@ -4,12 +4,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Modules.Catalog;
-using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
-using CatalogEventHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler;
+using CreateEventSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent.CreateEventHandler;
+using GetEventDetailsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails.GetEventDetailsHandler;
+using GetUpcomingEventsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents.GetUpcomingEventsHandler;
+using ReleaseTicketsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets.ReleaseTicketsHandler;
+using ReserveTicketsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets.ReserveTicketsHandler;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Catalog;
 
@@ -25,7 +33,7 @@ public class CatalogEventsApiBaselineTests
     public async Task CreateEvent_Should_Add_Event_To_Write_DbContext()
     {
         await using var db = CreateDbContext();
-        var handler = CreateHandler(db);
+        var handler = CreateCreateEventHandler(db);
 
         var result = await handler.Handle(
             new CreateEventCommand("OpenAI Conf", new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero), 49.90m, 120),
@@ -66,7 +74,7 @@ public class CatalogEventsApiBaselineTests
             });
         await db.SaveChangesAsync();
 
-        var handler = CreateHandler(db, new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
+        var handler = CreateGetUpcomingEventsHandler(db, new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
 
         var result = await handler.Handle(new GetUpcomingEventsQuery(), CancellationToken.None);
 
@@ -82,7 +90,7 @@ public class CatalogEventsApiBaselineTests
     public async Task GetEventDetails_Should_Return_NotFound_When_Event_Does_Not_Exist()
     {
         await using var db = CreateDbContext();
-        var handler = CreateHandler(db);
+        var handler = CreateGetEventDetailsHandler(db);
 
         var result = await handler.Handle(new GetEventDetailsQuery(Guid.NewGuid()), CancellationToken.None);
 
@@ -110,7 +118,7 @@ public class CatalogEventsApiBaselineTests
         });
         await db.SaveChangesAsync();
 
-        var handler = CreateHandler(db);
+        var handler = CreateReserveTicketsHandler(db);
 
         var result = await handler.Handle(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
@@ -139,7 +147,7 @@ public class CatalogEventsApiBaselineTests
         });
         await db.SaveChangesAsync();
 
-        var handler = CreateHandler(db);
+        var handler = CreateReserveTicketsHandler(db);
 
         var result = await handler.Handle(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
@@ -170,7 +178,7 @@ public class CatalogEventsApiBaselineTests
         });
         await db.SaveChangesAsync();
 
-        var handler = CreateHandler(db);
+        var handler = CreateReleaseTicketsHandler(db);
 
         var result = await handler.Handle(
             new ReleaseTicketsCommand(eventId, 2, Guid.NewGuid()),
@@ -217,11 +225,20 @@ public class CatalogEventsApiBaselineTests
         return new AppDbContext(options);
     }
 
-    private static CatalogEventHandler CreateHandler(AppDbContext db, TimeProvider? timeProvider = null) =>
+    private static CreateEventSliceHandler CreateCreateEventHandler(AppDbContext db) => new(db);
+
+    private static GetUpcomingEventsSliceHandler CreateGetUpcomingEventsHandler(
+        AppDbContext db,
+        TimeProvider? timeProvider = null) =>
         new(
             db,
-            db,
             timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
+
+    private static GetEventDetailsSliceHandler CreateGetEventDetailsHandler(AppDbContext db) => new(db);
+
+    private static ReserveTicketsSliceHandler CreateReserveTicketsHandler(AppDbContext db) => new(db);
+
+    private static ReleaseTicketsSliceHandler CreateReleaseTicketsHandler(AppDbContext db) => new(db);
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {

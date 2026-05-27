@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Application.Modules.Catalog.Features.Events;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
 using ModularVerticalSlice.Application.Shared.Modules;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog;
@@ -19,12 +23,18 @@ public sealed class CatalogModule : IModule
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(TimeProvider.System);
-        services.AddScoped<ModularVerticalSlice.Application.Modules.Catalog.Features.Events.EventHandler>();
+        services.AddScoped<CreateEventHandler>();
+        services.AddScoped<GetUpcomingEventsHandler>();
+        services.AddScoped<GetEventDetailsHandler>();
+        services.AddScoped<ReserveTicketsHandler>();
+        services.AddScoped<ReleaseTicketsHandler>();
     }
 
     /// <inheritdoc />
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        EventEndpoints.Map(endpoints);
+        CreateEventEndpoint.Map(endpoints);
+        GetUpcomingEventsEndpoint.Map(endpoints);
+        GetEventDetailsEndpoint.Map(endpoints);
     }
 }

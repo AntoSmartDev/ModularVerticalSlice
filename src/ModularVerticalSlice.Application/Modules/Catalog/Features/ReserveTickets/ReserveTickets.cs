@@ -1,0 +1,45 @@
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Application.Modules.Catalog.Domain;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
+using ModularVerticalSlice.SharedKernel;
+
+namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
+
+/// <summary>
+/// Handles ticket reservation for a specific catalog event.
+/// </summary>
+public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
+{
+    /// <summary>
+    /// Reserves tickets for an existing catalog event.
+    /// </summary>
+    public async Task<Result> Handle(
+        ReserveTicketsCommand command,
+        CancellationToken cancellationToken)
+    {
+        var entity = await writeDb.Events
+            .FirstOrDefaultAsync(x => x.Id == command.EventId, cancellationToken);
+
+        if (entity is null)
+        {
+            return Result.Failure(
+                Error.NotFound(
+                    "Catalog.EventNotFound",
+                    "The requested event was not found."));
+        }
+
+        var reservationResult = TicketReservationPolicy.CanReserve(
+            entity.AvailableTickets,
+            command.Quantity);
+
+        if (reservationResult.IsFailure)
+        {
+            return reservationResult;
+        }
+
+        entity.AvailableTickets -= command.Quantity;
+
+        return Result.Success();
+    }
+}
