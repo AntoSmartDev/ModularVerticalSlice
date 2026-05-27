@@ -1,4 +1,5 @@
 using ModularVerticalSlice.SharedKernel;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Domain;
 
@@ -17,30 +18,11 @@ public static class TicketReservationPolicy
     /// </returns>
     public static Result CanReserve(int availableTickets, int requestedQuantity)
     {
-        if (requestedQuantity <= 0)
-        {
-            return Result.Failure(
-                Error.Validation(
-                    "Catalog.InvalidQuantity",
-                    "The requested ticket quantity must be greater than zero."));
-        }
+        var entity = new Event { AvailableTickets = availableTickets };
+        var result = entity.ReserveTickets(requestedQuantity);
 
-        if (availableTickets < 0)
-        {
-            return Result.Failure(
-                Error.Validation(
-                    "Catalog.InvalidAvailability",
-                    "The available ticket count cannot be negative."));
-        }
-
-        if (requestedQuantity > availableTickets)
-        {
-            return Result.Failure(
-                Error.Conflict(
-                    "Catalog.NotEnoughTickets",
-                    "Not enough tickets are available for the requested reservation."));
-        }
-
-        return Result.Success();
+        return result.IsFailure
+            ? result
+            : Result.Success();
     }
 }

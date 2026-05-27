@@ -29,16 +29,12 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
                     "The requested event was not found."));
         }
 
-        var reservationResult = TicketReservationPolicy.CanReserve(
-            entity.AvailableTickets,
-            command.Quantity);
+        var reservationResult = entity.ReserveTickets(command.Quantity);
 
         if (reservationResult.IsFailure)
         {
             return reservationResult;
         }
-
-        entity.AvailableTickets -= command.Quantity;
 
         return Result.Success();
     }

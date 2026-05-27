@@ -28,8 +28,6 @@ public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
                     "The requested event was not found."));
         }
 
-        entity.AvailableTickets += command.Quantity;
-
-        return Result.Success();
+        return entity.ReleaseTickets(command.Quantity);
     }
 }
