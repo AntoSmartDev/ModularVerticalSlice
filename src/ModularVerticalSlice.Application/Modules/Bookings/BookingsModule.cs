@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Shared.Modules;
 
@@ -19,12 +20,12 @@ public sealed class BookingsModule : IModule
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(TimeProvider.System);
-        services.AddScoped<BookingLifecycleHandler>();
+        services.AddScoped<CreateBookingHandler>();
     }
 
     /// <inheritdoc />
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
-        BookingLifecycleEndpoints.Map(endpoints);
+        CreateBookingEndpoint.Map(endpoints);
     }
 }

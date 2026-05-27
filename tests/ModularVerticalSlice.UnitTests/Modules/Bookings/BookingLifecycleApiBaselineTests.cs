@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
@@ -551,7 +552,7 @@ public class BookingLifecycleApiBaselineTests
         return new AppDbContext(options);
     }
 
-    private static BookingLifecycleHandler CreateHandler(
+    private static CreateBookingHandler CreateHandler(
         AppDbContext db,
         TestMessageContext bus,
         ICurrentUserContext currentUserContext,
