@@ -38,6 +38,7 @@ public class PaymentProcessingBaselineTests
         var handler = new PaymentProcessingHandler(
             db,
             db,
+            new FakePaymentGateway(),
             bus,
             new FixedTimeProvider(processedAt));
 
@@ -91,6 +92,7 @@ public class PaymentProcessingBaselineTests
         var handler = new PaymentProcessingHandler(
             db,
             db,
+            new FakePaymentGateway(),
             bus,
             new FixedTimeProvider(processedAt));
 
@@ -130,6 +132,7 @@ public class PaymentProcessingBaselineTests
         var handler = new PaymentProcessingHandler(
             db,
             db,
+            new FakePaymentGateway(),
             bus,
             new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 22, 10, 0, TimeSpan.Zero)));
 

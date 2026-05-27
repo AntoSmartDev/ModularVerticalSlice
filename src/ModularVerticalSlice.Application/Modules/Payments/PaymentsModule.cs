@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Shared.Modules;
 
 namespace ModularVerticalSlice.Application.Modules.Payments;
@@ -17,6 +18,7 @@ public sealed class PaymentsModule : IModule
     /// <inheritdoc />
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddScoped<IPaymentGateway, FakePaymentGateway>();
     }
 
     /// <inheritdoc />

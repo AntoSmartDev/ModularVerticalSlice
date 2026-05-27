@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
-using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
@@ -21,6 +20,7 @@ namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProc
 public sealed class PaymentProcessingHandler(
     IPaymentWriteDbContext writeDb,
     ICatalogReadDbContext catalogReadDb,
+    IPaymentGateway paymentGateway,
     IMessageBus bus,
     TimeProvider timeProvider)
 {
@@ -50,7 +50,7 @@ public sealed class PaymentProcessingHandler(
                     "The target event was not found for payment processing."));
         }
 
-        var outcome = PaymentOutcomePolicy.Decide(command.UserId, command.Quantity);
+        var outcome = paymentGateway.Process(command.UserId, command.Quantity);
         var processedAt = timeProvider.GetUtcNow();
         var paymentId = Guid.NewGuid();
 
