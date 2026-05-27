@@ -223,6 +223,109 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that the confirm handler applies the entity transition to a pending booking.
+    /// </summary>
+    [Fact]
+    public async Task ConfirmBookingCommand_Should_Update_Booking_Status_To_Confirmed()
+    {
+        var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = Guid.NewGuid(),
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new BookingLifecycleHandler(db);
+
+        var result = await handler.Handle(new ConfirmBookingCommand(bookingId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(BookingStatus.Confirmed, db.Bookings.Single(x => x.Id == bookingId).Status);
+    }
+
+    /// <summary>
+    /// Verifies that the cancel handler applies the entity transition to a pending booking.
+    /// </summary>
+    [Fact]
+    public async Task CancelBookingCommand_Should_Update_Booking_Status_To_Cancelled()
+    {
+        var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = Guid.NewGuid(),
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new BookingLifecycleHandler(db);
+
+        var result = await handler.Handle(new CancelBookingCommand(bookingId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(BookingStatus.Cancelled, db.Bookings.Single(x => x.Id == bookingId).Status);
+    }
+
+    /// <summary>
+    /// Verifies that the expire handler applies the entity transition to a pending booking.
+    /// </summary>
+    [Fact]
+    public async Task ExpireBookingCommand_Should_Update_Booking_Status_To_Expired()
+    {
+        var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = Guid.NewGuid(),
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new BookingLifecycleHandler(db);
+
+        var result = await handler.Handle(new ExpireBookingCommand(bookingId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(BookingStatus.Expired, db.Bookings.Single(x => x.Id == bookingId).Status);
+    }
+
+    /// <summary>
+    /// Verifies that lifecycle handlers return not found when the booking does not exist.
+    /// </summary>
+    [Fact]
+    public async Task BookingLifecycleHandler_Should_Return_NotFound_For_Missing_Booking()
+    {
+        await using var db = CreateDbContext();
+        var handler = new BookingLifecycleHandler(db);
+
+        var result = await handler.Handle(new ConfirmBookingCommand(Guid.NewGuid()), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.NotFound, result.Error.Type);
+        Assert.Equal("Bookings.BookingNotFound", result.Error.Code);
+    }
+
+    /// <summary>
     /// Verifies the shape of the payment command and booking payment-timeout event.
     /// </summary>
     [Fact]
