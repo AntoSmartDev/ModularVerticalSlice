@@ -14,6 +14,34 @@ namespace ModularVerticalSlice.UnitTests.Modules.Payments;
 public class PaymentProcessingBaselineTests
 {
     /// <summary>
+    /// Verifies that the fake gateway returns a successful decision for the baseline happy path.
+    /// </summary>
+    [Fact]
+    public void FakePaymentGateway_Should_Return_Success_For_Baseline_Happy_Path()
+    {
+        var gateway = new FakePaymentGateway();
+
+        var outcome = gateway.Process("user-1", 2);
+
+        Assert.True(outcome.IsSuccess);
+        Assert.Null(outcome.FailureReason);
+    }
+
+    /// <summary>
+    /// Verifies that the fake gateway returns a deterministic decline for the baseline business-failure path.
+    /// </summary>
+    [Fact]
+    public void FakePaymentGateway_Should_Return_Failure_For_Deterministic_Decline_Path()
+    {
+        var gateway = new FakePaymentGateway();
+
+        var outcome = gateway.Process("declined-user", 2);
+
+        Assert.False(outcome.IsSuccess);
+        Assert.Equal("Payment was declined.", outcome.FailureReason);
+    }
+
+    /// <summary>
     /// Verifies that a successful payment creates a succeeded payment record and publishes the success event.
     /// </summary>
     [Fact]
