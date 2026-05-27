@@ -1,4 +1,3 @@
-using ModularVerticalSlice.Application.Modules.Catalog.Domain;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
@@ -87,19 +86,6 @@ public class TicketLifecycleBaselineTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(10, entity.AvailableTickets);
-    }
-
-    /// <summary>
-    /// Verifies that the transitional policy still exposes the same decision outcome shape.
-    /// </summary>
-    [Fact]
-    public void TicketReservationPolicy_Should_Remain_Compatible_With_Entity_Behavior()
-    {
-        var result = TicketReservationPolicy.CanReserve(2, 3);
-
-        Assert.True(result.IsFailure);
-        Assert.Equal(ErrorType.Conflict, result.Error.Type);
-        Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
     }
 
     /// <summary>

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using ModularVerticalSlice.Application.Modules.Catalog.Domain;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.SharedKernel;
