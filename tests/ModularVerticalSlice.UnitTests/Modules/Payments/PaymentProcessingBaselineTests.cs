@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
@@ -13,6 +14,51 @@ namespace ModularVerticalSlice.UnitTests.Modules.Payments;
 /// </summary>
 public class PaymentProcessingBaselineTests
 {
+    /// <summary>
+    /// Verifies that the explicit business-decline factory preserves business-failure semantics.
+    /// </summary>
+    [Fact]
+    public void PaymentOutcomeDecision_BusinessDecline_Should_Set_Business_Semantics()
+    {
+        var outcome = PaymentOutcomeDecision.BusinessDecline("declined");
+
+        Assert.False(outcome.IsSuccess);
+        Assert.True(outcome.IsBusinessFailure);
+        Assert.False(outcome.IsTechnicalFailure);
+        Assert.False(outcome.IsRetriableTechnicalFailure);
+        Assert.Equal("declined", outcome.FailureReason);
+    }
+
+    /// <summary>
+    /// Verifies that the explicit retriable technical-failure factory preserves retryable technical semantics.
+    /// </summary>
+    [Fact]
+    public void PaymentOutcomeDecision_RetriableTechnicalFailure_Should_Set_Technical_Semantics()
+    {
+        var outcome = PaymentOutcomeDecision.RetriableTechnicalFailure("temporary");
+
+        Assert.False(outcome.IsSuccess);
+        Assert.False(outcome.IsBusinessFailure);
+        Assert.True(outcome.IsTechnicalFailure);
+        Assert.True(outcome.IsRetriableTechnicalFailure);
+        Assert.Equal("temporary", outcome.FailureReason);
+    }
+
+    /// <summary>
+    /// Verifies that the explicit non-retriable technical-failure factory preserves terminal technical semantics.
+    /// </summary>
+    [Fact]
+    public void PaymentOutcomeDecision_NonRetriableTechnicalFailure_Should_Set_Terminal_Technical_Semantics()
+    {
+        var outcome = PaymentOutcomeDecision.NonRetriableTechnicalFailure("terminal");
+
+        Assert.False(outcome.IsSuccess);
+        Assert.False(outcome.IsBusinessFailure);
+        Assert.True(outcome.IsTechnicalFailure);
+        Assert.False(outcome.IsRetriableTechnicalFailure);
+        Assert.Equal("terminal", outcome.FailureReason);
+    }
+
     /// <summary>
     /// Verifies that the retriable technical-failure factory preserves the explicit retry shape.
     /// </summary>

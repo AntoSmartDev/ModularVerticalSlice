@@ -16,14 +16,13 @@ public sealed class FakePaymentGateway : IPaymentGateway
     {
         if (userId.Contains("technical-terminal", StringComparison.OrdinalIgnoreCase))
         {
-            return PaymentOutcomeDecision.TechnicalFailure(
-                "Payment provider rejected the request as non-retriable.",
-                isRetriableTechnicalFailure: false);
+            return PaymentOutcomeDecision.NonRetriableTechnicalFailure(
+                "Payment provider rejected the request as non-retriable.");
         }
 
         if (userId.Contains("technical-failure", StringComparison.OrdinalIgnoreCase))
         {
-            return PaymentOutcomeDecision.TechnicalFailure(
+            return PaymentOutcomeDecision.RetriableTechnicalFailure(
                 "Payment provider is temporarily unavailable.");
         }
 

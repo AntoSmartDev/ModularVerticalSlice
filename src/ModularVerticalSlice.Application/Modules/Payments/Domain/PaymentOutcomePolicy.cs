@@ -25,17 +25,17 @@ public static class PaymentOutcomePolicy
     {
         if (string.IsNullOrWhiteSpace(userId))
         {
-            return PaymentOutcomeDecision.Fail("Missing payment owner.");
+            return PaymentOutcomeDecision.BusinessDecline("Missing payment owner.");
         }
 
         if (quantity <= 0)
         {
-            return PaymentOutcomeDecision.Fail("Invalid payment quantity.");
+            return PaymentOutcomeDecision.BusinessDecline("Invalid payment quantity.");
         }
 
         if (userId.Contains("declined", StringComparison.OrdinalIgnoreCase))
         {
-            return PaymentOutcomeDecision.Fail("Payment was declined.");
+            return PaymentOutcomeDecision.BusinessDecline("Payment was declined.");
         }
 
         return PaymentOutcomeDecision.Success();
@@ -73,19 +73,26 @@ public sealed record PaymentOutcomeDecision(
     /// <summary>
     /// Creates a failed payment outcome with a business reason.
     /// </summary>
-    public static PaymentOutcomeDecision Fail(string failureReason) =>
+    public static PaymentOutcomeDecision BusinessDecline(string failureReason) =>
         new(PaymentOutcomeKind.BusinessFailure, failureReason);
 
     /// <summary>
-    /// Creates a technical failure outcome that should be delegated to infrastructure retry semantics.
+    /// Creates a retriable technical-failure outcome that should be delegated to runtime retry semantics.
     /// </summary>
-    public static PaymentOutcomeDecision TechnicalFailure(
-        string failureReason,
-        bool isRetriableTechnicalFailure = true) =>
+    public static PaymentOutcomeDecision RetriableTechnicalFailure(string failureReason) =>
         new(
             PaymentOutcomeKind.TechnicalFailure,
             failureReason,
-            isRetriableTechnicalFailure);
+            true);
+
+    /// <summary>
+    /// Creates a non-retriable technical-failure outcome for terminal provider-facing failures.
+    /// </summary>
+    public static PaymentOutcomeDecision NonRetriableTechnicalFailure(string failureReason) =>
+        new(
+            PaymentOutcomeKind.TechnicalFailure,
+            failureReason,
+            false);
 }
 
 /// <summary>
