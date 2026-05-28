@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.GetCustomerBookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
@@ -319,6 +321,138 @@ public class BookingLifecycleApiBaselineTests
         var handler = new BookingLifecycleHandler(db);
 
         var result = await handler.Handle(new ConfirmBookingCommand(Guid.NewGuid()), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.NotFound, result.Error.Type);
+        Assert.Equal("Bookings.BookingNotFound", result.Error.Code);
+    }
+
+    /// <summary>
+    /// Verifies that the current-user bookings query returns only bookings owned by the authenticated user.
+    /// </summary>
+    [Fact]
+    public async Task GetCustomerBookings_Should_Return_Only_Current_User_Bookings()
+    {
+        await using var db = CreateDbContext();
+        var currentUserId = "user-1";
+
+        db.Bookings.AddRange(
+            new Booking
+            {
+                Id = Guid.NewGuid(),
+                EventId = Guid.NewGuid(),
+                Quantity = 1,
+                Status = BookingStatus.Pending,
+                UserId = currentUserId,
+                ClientRequestId = Guid.NewGuid(),
+                CreatedAt = new DateTimeOffset(2026, 5, 23, 11, 0, 0, TimeSpan.Zero)
+            },
+            new Booking
+            {
+                Id = Guid.NewGuid(),
+                EventId = Guid.NewGuid(),
+                Quantity = 2,
+                Status = BookingStatus.Confirmed,
+                UserId = currentUserId,
+                ClientRequestId = Guid.NewGuid(),
+                CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+            },
+            new Booking
+            {
+                Id = Guid.NewGuid(),
+                EventId = Guid.NewGuid(),
+                Quantity = 3,
+                Status = BookingStatus.Pending,
+                UserId = "user-2",
+                ClientRequestId = Guid.NewGuid(),
+                CreatedAt = new DateTimeOffset(2026, 5, 23, 13, 0, 0, TimeSpan.Zero)
+            });
+        await db.SaveChangesAsync();
+
+        var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(currentUserId));
+
+        var result = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value.Count);
+        Assert.All(result.Value, booking => Assert.Equal(currentUserId, db.Bookings.Single(x => x.Id == booking.Id).UserId));
+        Assert.Equal(BookingStatus.Confirmed, result.Value[0].Status);
+        Assert.Equal(BookingStatus.Pending, result.Value[1].Status);
+    }
+
+    /// <summary>
+    /// Verifies that the current-user bookings query requires an authenticated user.
+    /// </summary>
+    [Fact]
+    public async Task GetCustomerBookings_Should_Return_Unauthorized_When_Current_User_Is_Missing()
+    {
+        await using var db = CreateDbContext();
+        var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(string.Empty));
+
+        var result = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.Unauthorized, result.Error.Type);
+        Assert.Equal("Bookings.MissingCurrentUser", result.Error.Code);
+    }
+
+    /// <summary>
+    /// Verifies that booking details are returned only for bookings owned by the current user.
+    /// </summary>
+    [Fact]
+    public async Task GetBookingDetails_Should_Return_Current_User_Booking()
+    {
+        await using var db = CreateDbContext();
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext("user-1"));
+
+        var result = await handler.Handle(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(bookingId, result.Value.Id);
+        Assert.Equal(eventId, result.Value.EventId);
+        Assert.Equal(2, result.Value.Quantity);
+        Assert.Equal("user-1", result.Value.UserId);
+    }
+
+    /// <summary>
+    /// Verifies that booking details are not returned for another user's booking.
+    /// </summary>
+    [Fact]
+    public async Task GetBookingDetails_Should_Return_NotFound_For_Different_User()
+    {
+        await using var db = CreateDbContext();
+        var bookingId = Guid.NewGuid();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = Guid.NewGuid(),
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-2",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext("user-1"));
+
+        var result = await handler.Handle(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -669,10 +803,10 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
-    /// Verifies that the Bookings module maps the baseline booking lifecycle endpoint.
+    /// Verifies that the Bookings module maps the baseline booking endpoints.
     /// </summary>
     [Fact]
-    public void BookingsModule_Should_Map_Baseline_Booking_Lifecycle_Endpoint()
+    public void BookingsModule_Should_Map_Baseline_Booking_Endpoints()
     {
         var builder = WebApplication.CreateBuilder();
         var module = new BookingsModule();
@@ -692,6 +826,7 @@ public class BookingLifecycleApiBaselineTests
             .ToArray();
 
         Assert.Contains("/api/v1/bookings/", routes);
+        Assert.Contains("/api/v1/bookings/{id:guid}", routes);
     }
 
     private static AppDbContext CreateDbContext()

@@ -3,6 +3,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.GetCustomerBookings;
 using ModularVerticalSlice.Application.Shared.Modules;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings;
@@ -22,11 +24,15 @@ public sealed class BookingsModule : IModule
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<CreateBookingHandler>();
         services.AddScoped<BookingLifecycleHandler>();
+        services.AddScoped<GetCustomerBookingsHandler>();
+        services.AddScoped<GetBookingDetailsHandler>();
     }
 
     /// <inheritdoc />
     public void MapEndpoints(IEndpointRouteBuilder endpoints)
     {
         CreateBookingEndpoint.Map(endpoints);
+        GetCustomerBookingsEndpoint.Map(endpoints);
+        GetBookingDetailsEndpoint.Map(endpoints);
     }
 }
