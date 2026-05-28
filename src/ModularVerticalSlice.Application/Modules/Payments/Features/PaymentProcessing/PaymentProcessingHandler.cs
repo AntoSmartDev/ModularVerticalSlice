@@ -55,9 +55,7 @@ public sealed class PaymentProcessingHandler(
 
         if (outcome.IsTechnicalFailure)
         {
-            throw new PaymentTechnicalFailureException(
-                outcome.FailureReason ?? "The payment provider failed unexpectedly.",
-                outcome.IsRetriableTechnicalFailure);
+            throw ToTechnicalFailure(outcome);
         }
 
         var processedAt = timeProvider.GetUtcNow();
@@ -92,5 +90,15 @@ public sealed class PaymentProcessingHandler(
                 processedAt));
 
         return Result.Success();
+    }
+
+    private static PaymentTechnicalFailureException ToTechnicalFailure(
+        Domain.PaymentOutcomeDecision outcome)
+    {
+        var message = outcome.FailureReason ?? "The payment provider failed unexpectedly.";
+
+        return outcome.IsRetriableTechnicalFailure
+            ? PaymentTechnicalFailureException.Retriable(message)
+            : PaymentTechnicalFailureException.NonRetriable(message);
     }
 }

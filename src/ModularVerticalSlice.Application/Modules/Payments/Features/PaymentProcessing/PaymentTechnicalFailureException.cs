@@ -12,4 +12,16 @@ public sealed class PaymentTechnicalFailureException(
     /// Indicates whether the current technical failure is considered retriable by the baseline shaping.
     /// </summary>
     public bool IsRetriable { get; } = isRetriable;
+
+    /// <summary>
+    /// Creates a retriable technical-failure exception.
+    /// </summary>
+    public static PaymentTechnicalFailureException Retriable(string message) =>
+        new(message, true);
+
+    /// <summary>
+    /// Creates a non-retriable technical-failure exception.
+    /// </summary>
+    public static PaymentTechnicalFailureException NonRetriable(string message) =>
+        new(message, false);
 }
