@@ -14,6 +14,30 @@ namespace ModularVerticalSlice.UnitTests.Modules.Payments;
 public class PaymentProcessingBaselineTests
 {
     /// <summary>
+    /// Verifies that the retriable technical-failure factory preserves the explicit retry shape.
+    /// </summary>
+    [Fact]
+    public void PaymentTechnicalFailureException_Retriable_Should_Set_Retry_Shape()
+    {
+        var exception = PaymentTechnicalFailureException.Retriable("temporary");
+
+        Assert.Equal("temporary", exception.Message);
+        Assert.True(exception.IsRetriable);
+    }
+
+    /// <summary>
+    /// Verifies that the non-retriable technical-failure factory preserves the explicit terminal shape.
+    /// </summary>
+    [Fact]
+    public void PaymentTechnicalFailureException_NonRetriable_Should_Set_Terminal_Shape()
+    {
+        var exception = PaymentTechnicalFailureException.NonRetriable("terminal");
+
+        Assert.Equal("terminal", exception.Message);
+        Assert.False(exception.IsRetriable);
+    }
+
+    /// <summary>
     /// Verifies that the fake gateway returns a successful decision for the baseline happy path.
     /// </summary>
     [Fact]
