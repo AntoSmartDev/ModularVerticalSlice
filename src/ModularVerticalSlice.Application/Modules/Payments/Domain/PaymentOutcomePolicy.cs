@@ -46,17 +46,59 @@ public static class PaymentOutcomePolicy
 /// Represents the business outcome chosen for a payment request.
 /// </summary>
 public sealed record PaymentOutcomeDecision(
-    bool IsSuccess,
+    PaymentOutcomeKind Kind,
     string? FailureReason)
 {
     /// <summary>
+    /// True when the payment completed successfully.
+    /// </summary>
+    public bool IsSuccess => Kind == PaymentOutcomeKind.Success;
+
+    /// <summary>
+    /// True when the payment failed as a business outcome.
+    /// </summary>
+    public bool IsBusinessFailure => Kind == PaymentOutcomeKind.BusinessFailure;
+
+    /// <summary>
+    /// True when the payment failed for a technical reason and should be retried by runtime infrastructure.
+    /// </summary>
+    public bool IsTechnicalFailure => Kind == PaymentOutcomeKind.TechnicalFailure;
+
+    /// <summary>
     /// Creates a successful payment outcome.
     /// </summary>
-    public static PaymentOutcomeDecision Success() => new(true, null);
+    public static PaymentOutcomeDecision Success() => new(PaymentOutcomeKind.Success, null);
 
     /// <summary>
     /// Creates a failed payment outcome with a business reason.
     /// </summary>
     public static PaymentOutcomeDecision Fail(string failureReason) =>
-        new(false, failureReason);
+        new(PaymentOutcomeKind.BusinessFailure, failureReason);
+
+    /// <summary>
+    /// Creates a technical failure outcome that should be delegated to infrastructure retry semantics.
+    /// </summary>
+    public static PaymentOutcomeDecision TechnicalFailure(string failureReason) =>
+        new(PaymentOutcomeKind.TechnicalFailure, failureReason);
+}
+
+/// <summary>
+/// Defines the high-level outcome kinds exposed by the provider-facing gateway seam.
+/// </summary>
+public enum PaymentOutcomeKind
+{
+    /// <summary>
+    /// The payment completed successfully.
+    /// </summary>
+    Success = 1,
+
+    /// <summary>
+    /// The payment completed as a business failure.
+    /// </summary>
+    BusinessFailure = 2,
+
+    /// <summary>
+    /// The payment could not be processed because of a technical failure.
+    /// </summary>
+    TechnicalFailure = 3
 }

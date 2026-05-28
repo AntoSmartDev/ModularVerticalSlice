@@ -14,8 +14,8 @@ namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProc
 /// <remarks>
 /// This handler keeps the first release deliberately small: it evaluates a
 /// deterministic business outcome, creates the minimal payment record and
-/// publishes the resulting success or failure event. Technical failures remain
-/// a Wolverine concern rather than custom handler logic.
+/// publishes the resulting success or business-failure event. Technical
+/// failures are surfaced as exceptions so Wolverine can own retry semantics.
 /// </remarks>
 public sealed class PaymentProcessingHandler(
     IPaymentWriteDbContext writeDb,
@@ -51,6 +51,13 @@ public sealed class PaymentProcessingHandler(
         }
 
         var outcome = paymentGateway.Process(command.UserId, command.Quantity);
+
+        if (outcome.IsTechnicalFailure)
+        {
+            throw new InvalidOperationException(
+                outcome.FailureReason ?? "The payment provider failed unexpectedly.");
+        }
+
         var processedAt = timeProvider.GetUtcNow();
         var paymentId = Guid.NewGuid();
 

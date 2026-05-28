@@ -24,6 +24,8 @@ public class PaymentProcessingBaselineTests
         var outcome = gateway.Process("user-1", 2);
 
         Assert.True(outcome.IsSuccess);
+        Assert.False(outcome.IsBusinessFailure);
+        Assert.False(outcome.IsTechnicalFailure);
         Assert.Null(outcome.FailureReason);
     }
 
@@ -38,7 +40,25 @@ public class PaymentProcessingBaselineTests
         var outcome = gateway.Process("declined-user", 2);
 
         Assert.False(outcome.IsSuccess);
+        Assert.True(outcome.IsBusinessFailure);
+        Assert.False(outcome.IsTechnicalFailure);
         Assert.Equal("Payment was declined.", outcome.FailureReason);
+    }
+
+    /// <summary>
+    /// Verifies that the fake gateway can produce a deterministic technical-failure outcome.
+    /// </summary>
+    [Fact]
+    public void FakePaymentGateway_Should_Return_Technical_Failure_For_Deterministic_Technical_Path()
+    {
+        var gateway = new FakePaymentGateway();
+
+        var outcome = gateway.Process("technical-failure-user", 2);
+
+        Assert.False(outcome.IsSuccess);
+        Assert.False(outcome.IsBusinessFailure);
+        Assert.True(outcome.IsTechnicalFailure);
+        Assert.Equal("Payment provider is temporarily unavailable.", outcome.FailureReason);
     }
 
     /// <summary>
@@ -147,6 +167,47 @@ public class PaymentProcessingBaselineTests
             published.PaymentId == payment.Id &&
             published.Reason == "Payment was declined." &&
             published.FailedAt == processedAt);
+    }
+
+    /// <summary>
+    /// Verifies that a technical gateway failure is surfaced as an exception so runtime retry semantics can own it.
+    /// </summary>
+    [Fact]
+    public async Task ProcessPayment_Should_Throw_On_Technical_Failure_Without_Persisting_Or_Publishing()
+    {
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+        var eventId = Guid.NewGuid();
+        var bookingId = Guid.NewGuid();
+        var handler = new PaymentProcessingHandler(
+            db,
+            db,
+            new FakePaymentGateway(),
+            bus,
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 20, 0, 0, TimeSpan.Zero)));
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Technical failure event",
+            Date = new DateTimeOffset(2026, 6, 12, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 30m,
+            AvailableTickets = 10
+        });
+        await db.SaveChangesAsync();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            handler.Handle(
+                new ProcessPaymentCommand(
+                    bookingId,
+                    eventId,
+                    "technical-failure-user",
+                    1),
+                CancellationToken.None));
+
+        Assert.Equal("Payment provider is temporarily unavailable.", exception.Message);
+        Assert.Empty(db.ChangeTracker.Entries<Payment>());
+        Assert.Empty(bus.Published);
     }
 
     /// <summary>

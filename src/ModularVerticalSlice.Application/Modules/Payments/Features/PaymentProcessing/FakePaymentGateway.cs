@@ -12,6 +12,14 @@ public sealed class FakePaymentGateway : IPaymentGateway
     /// Delegates the baseline payment outcome to the deterministic policy so
     /// the first-release behavior stays stable.
     /// </summary>
-    public PaymentOutcomeDecision Process(string userId, int quantity) =>
-        PaymentOutcomePolicy.Decide(userId, quantity);
+    public PaymentOutcomeDecision Process(string userId, int quantity)
+    {
+        if (userId.Contains("technical-failure", StringComparison.OrdinalIgnoreCase))
+        {
+            return PaymentOutcomeDecision.TechnicalFailure(
+                "Payment provider is temporarily unavailable.");
+        }
+
+        return PaymentOutcomePolicy.Decide(userId, quantity);
+    }
 }
