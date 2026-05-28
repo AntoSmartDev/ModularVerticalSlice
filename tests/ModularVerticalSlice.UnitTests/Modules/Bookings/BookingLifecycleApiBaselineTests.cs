@@ -328,6 +328,37 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that lifecycle handlers preserve the entity conflict when the transition is invalid.
+    /// </summary>
+    [Fact]
+    public async Task BookingLifecycleHandler_Should_Return_Conflict_For_Invalid_Transition()
+    {
+        var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = Guid.NewGuid(),
+            Quantity = 2,
+            Status = BookingStatus.Cancelled,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new BookingLifecycleHandler(db);
+
+        var result = await handler.Handle(new ConfirmBookingCommand(bookingId), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.Conflict, result.Error.Type);
+        Assert.Equal("Bookings.InvalidConfirmation", result.Error.Code);
+        Assert.Equal(BookingStatus.Cancelled, db.Bookings.Single(x => x.Id == bookingId).Status);
+    }
+
+    /// <summary>
     /// Verifies that the current-user bookings query returns only bookings owned by the authenticated user.
     /// </summary>
     [Fact]
@@ -457,6 +488,22 @@ public class BookingLifecycleApiBaselineTests
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
         Assert.Equal("Bookings.BookingNotFound", result.Error.Code);
+    }
+
+    /// <summary>
+    /// Verifies that booking details require an authenticated current user.
+    /// </summary>
+    [Fact]
+    public async Task GetBookingDetails_Should_Return_Unauthorized_When_Current_User_Is_Missing()
+    {
+        await using var db = CreateDbContext();
+        var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext(string.Empty));
+
+        var result = await handler.Handle(new GetBookingDetailsQuery(Guid.NewGuid()), CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.Unauthorized, result.Error.Type);
+        Assert.Equal("Bookings.MissingCurrentUser", result.Error.Code);
     }
 
     /// <summary>
