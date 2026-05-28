@@ -15,6 +15,34 @@ namespace ModularVerticalSlice.UnitTests.Modules.Payments;
 public class PaymentProcessingBaselineTests
 {
     /// <summary>
+    /// Verifies that the policy maps a missing owner to an explicit business decline.
+    /// </summary>
+    [Fact]
+    public void PaymentOutcomePolicy_Should_Return_BusinessDecline_For_Missing_User()
+    {
+        var outcome = PaymentOutcomePolicy.Decide("", 1);
+
+        Assert.False(outcome.IsSuccess);
+        Assert.True(outcome.IsBusinessFailure);
+        Assert.False(outcome.IsTechnicalFailure);
+        Assert.Equal("Missing payment owner.", outcome.FailureReason);
+    }
+
+    /// <summary>
+    /// Verifies that the policy maps an invalid quantity to an explicit business decline.
+    /// </summary>
+    [Fact]
+    public void PaymentOutcomePolicy_Should_Return_BusinessDecline_For_Invalid_Quantity()
+    {
+        var outcome = PaymentOutcomePolicy.Decide("user-1", 0);
+
+        Assert.False(outcome.IsSuccess);
+        Assert.True(outcome.IsBusinessFailure);
+        Assert.False(outcome.IsTechnicalFailure);
+        Assert.Equal("Invalid payment quantity.", outcome.FailureReason);
+    }
+
+    /// <summary>
     /// Verifies that the explicit business-decline factory preserves business-failure semantics.
     /// </summary>
     [Fact]
