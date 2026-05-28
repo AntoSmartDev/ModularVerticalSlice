@@ -173,7 +173,7 @@ public class PaymentProcessingBaselineTests
     /// Verifies that a technical gateway failure is surfaced as an exception so runtime retry semantics can own it.
     /// </summary>
     [Fact]
-    public async Task ProcessPayment_Should_Throw_On_Technical_Failure_Without_Persisting_Or_Publishing()
+    public async Task ProcessPayment_Should_Throw_Dedicated_Technical_Failure_Without_Persisting_Or_Publishing()
     {
         await using var db = CreateDbContext();
         var bus = new TestMessageContext();
@@ -196,7 +196,7 @@ public class PaymentProcessingBaselineTests
         });
         await db.SaveChangesAsync();
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             handler.Handle(
                 new ProcessPaymentCommand(
                     bookingId,
