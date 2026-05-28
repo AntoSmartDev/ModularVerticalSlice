@@ -211,6 +211,77 @@ public class PaymentProcessingBaselineTests
     }
 
     /// <summary>
+    /// Verifies that business failure and technical failure remain clearly separated in their observable effects.
+    /// </summary>
+    [Fact]
+    public async Task ProcessPayment_Should_Separate_Business_And_Technical_Failure_Effects()
+    {
+        await using var db = CreateDbContext();
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Separation event",
+            Date = new DateTimeOffset(2026, 6, 13, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 25m,
+            AvailableTickets = 10
+        });
+        await db.SaveChangesAsync();
+
+        var businessBus = new TestMessageContext();
+        var businessHandler = new PaymentProcessingHandler(
+            db,
+            db,
+            new FakePaymentGateway(),
+            businessBus,
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 0, 0, TimeSpan.Zero)));
+
+        var businessResult = await businessHandler.Handle(
+            new ProcessPaymentCommand(
+                Guid.NewGuid(),
+                eventId,
+                "declined-user",
+                1),
+            CancellationToken.None);
+
+        Assert.True(businessResult.IsSuccess);
+        Assert.Contains(businessBus.Published, x => x is Envelope { Message: PaymentFailedEvent });
+        Assert.Single(db.ChangeTracker.Entries<Payment>());
+
+        await using var technicalDb = CreateDbContext();
+        technicalDb.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Separation event",
+            Date = new DateTimeOffset(2026, 6, 13, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 25m,
+            AvailableTickets = 10
+        });
+        await technicalDb.SaveChangesAsync();
+
+        var technicalBus = new TestMessageContext();
+        var technicalHandler = new PaymentProcessingHandler(
+            technicalDb,
+            technicalDb,
+            new FakePaymentGateway(),
+            technicalBus,
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 5, 0, TimeSpan.Zero)));
+
+        await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
+            technicalHandler.Handle(
+                new ProcessPaymentCommand(
+                    Guid.NewGuid(),
+                    eventId,
+                    "technical-failure-user",
+                    1),
+                CancellationToken.None));
+
+        Assert.Empty(technicalBus.Published);
+        Assert.Empty(technicalDb.ChangeTracker.Entries<Payment>());
+    }
+
+    /// <summary>
     /// Verifies that payment processing fails when the related event does not exist.
     /// </summary>
     [Fact]
