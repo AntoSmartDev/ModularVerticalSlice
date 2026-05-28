@@ -56,7 +56,8 @@ public sealed class PaymentProcessingHandler(
         if (outcome.IsTechnicalFailure)
         {
             throw new PaymentTechnicalFailureException(
-                outcome.FailureReason ?? "The payment provider failed unexpectedly.");
+                outcome.FailureReason ?? "The payment provider failed unexpectedly.",
+                outcome.IsRetriableTechnicalFailure);
         }
 
         var processedAt = timeProvider.GetUtcNow();

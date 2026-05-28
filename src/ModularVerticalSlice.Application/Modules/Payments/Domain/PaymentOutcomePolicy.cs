@@ -47,7 +47,8 @@ public static class PaymentOutcomePolicy
 /// </summary>
 public sealed record PaymentOutcomeDecision(
     PaymentOutcomeKind Kind,
-    string? FailureReason)
+    string? FailureReason,
+    bool IsRetriableTechnicalFailure = false)
 {
     /// <summary>
     /// True when the payment completed successfully.
@@ -78,8 +79,13 @@ public sealed record PaymentOutcomeDecision(
     /// <summary>
     /// Creates a technical failure outcome that should be delegated to infrastructure retry semantics.
     /// </summary>
-    public static PaymentOutcomeDecision TechnicalFailure(string failureReason) =>
-        new(PaymentOutcomeKind.TechnicalFailure, failureReason);
+    public static PaymentOutcomeDecision TechnicalFailure(
+        string failureReason,
+        bool isRetriableTechnicalFailure = true) =>
+        new(
+            PaymentOutcomeKind.TechnicalFailure,
+            failureReason,
+            isRetriableTechnicalFailure);
 }
 
 /// <summary>

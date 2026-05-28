@@ -58,7 +58,25 @@ public class PaymentProcessingBaselineTests
         Assert.False(outcome.IsSuccess);
         Assert.False(outcome.IsBusinessFailure);
         Assert.True(outcome.IsTechnicalFailure);
+        Assert.True(outcome.IsRetriableTechnicalFailure);
         Assert.Equal("Payment provider is temporarily unavailable.", outcome.FailureReason);
+    }
+
+    /// <summary>
+    /// Verifies that the fake gateway can produce a deterministic non-retriable technical-failure outcome.
+    /// </summary>
+    [Fact]
+    public void FakePaymentGateway_Should_Return_NonRetriable_Technical_Failure_For_Terminal_Technical_Path()
+    {
+        var gateway = new FakePaymentGateway();
+
+        var outcome = gateway.Process("technical-terminal-user", 2);
+
+        Assert.False(outcome.IsSuccess);
+        Assert.False(outcome.IsBusinessFailure);
+        Assert.True(outcome.IsTechnicalFailure);
+        Assert.False(outcome.IsRetriableTechnicalFailure);
+        Assert.Equal("Payment provider rejected the request as non-retriable.", outcome.FailureReason);
     }
 
     /// <summary>
@@ -206,6 +224,49 @@ public class PaymentProcessingBaselineTests
                 CancellationToken.None));
 
         Assert.Equal("Payment provider is temporarily unavailable.", exception.Message);
+        Assert.True(exception.IsRetriable);
+        Assert.Empty(db.ChangeTracker.Entries<Payment>());
+        Assert.Empty(bus.Published);
+    }
+
+    /// <summary>
+    /// Verifies that non-retriable technical failures are still surfaced explicitly with their retry shape.
+    /// </summary>
+    [Fact]
+    public async Task ProcessPayment_Should_Throw_NonRetriable_Technical_Failure_With_Explicit_Shape()
+    {
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+        var eventId = Guid.NewGuid();
+        var bookingId = Guid.NewGuid();
+        var handler = new PaymentProcessingHandler(
+            db,
+            db,
+            new FakePaymentGateway(),
+            bus,
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 20, 10, 0, TimeSpan.Zero)));
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Terminal technical failure event",
+            Date = new DateTimeOffset(2026, 6, 12, 11, 0, 0, TimeSpan.Zero),
+            TicketPrice = 30m,
+            AvailableTickets = 10
+        });
+        await db.SaveChangesAsync();
+
+        var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
+            handler.Handle(
+                new ProcessPaymentCommand(
+                    bookingId,
+                    eventId,
+                    "technical-terminal-user",
+                    1),
+                CancellationToken.None));
+
+        Assert.Equal("Payment provider rejected the request as non-retriable.", exception.Message);
+        Assert.False(exception.IsRetriable);
         Assert.Empty(db.ChangeTracker.Entries<Payment>());
         Assert.Empty(bus.Published);
     }
