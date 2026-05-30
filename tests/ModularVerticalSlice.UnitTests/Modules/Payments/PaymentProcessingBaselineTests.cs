@@ -69,6 +69,9 @@ public class PaymentProcessingBaselineTests
         Assert.False(outcome.IsBusinessFailure);
         Assert.True(outcome.IsTechnicalFailure);
         Assert.True(outcome.IsRetriableTechnicalFailure);
+        Assert.True(outcome.IsRecoverableProviderState);
+        Assert.False(outcome.IsTerminalProviderState);
+        Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, outcome.ProviderState);
         Assert.Equal("temporary", outcome.FailureReason);
     }
 
@@ -84,6 +87,9 @@ public class PaymentProcessingBaselineTests
         Assert.False(outcome.IsBusinessFailure);
         Assert.True(outcome.IsTechnicalFailure);
         Assert.False(outcome.IsRetriableTechnicalFailure);
+        Assert.False(outcome.IsRecoverableProviderState);
+        Assert.True(outcome.IsTerminalProviderState);
+        Assert.Equal(PaymentProviderStateKind.Terminal, outcome.ProviderState);
         Assert.Equal("terminal", outcome.FailureReason);
     }
 
@@ -97,6 +103,7 @@ public class PaymentProcessingBaselineTests
 
         Assert.Equal("temporary", exception.Message);
         Assert.True(exception.IsRetriable);
+        Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, exception.ProviderState);
     }
 
     /// <summary>
@@ -109,6 +116,7 @@ public class PaymentProcessingBaselineTests
 
         Assert.Equal("terminal", exception.Message);
         Assert.False(exception.IsRetriable);
+        Assert.Equal(PaymentProviderStateKind.Terminal, exception.ProviderState);
     }
 
     /// <summary>
@@ -157,6 +165,8 @@ public class PaymentProcessingBaselineTests
         Assert.False(outcome.IsBusinessFailure);
         Assert.True(outcome.IsTechnicalFailure);
         Assert.True(outcome.IsRetriableTechnicalFailure);
+        Assert.True(outcome.IsRecoverableProviderState);
+        Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, outcome.ProviderState);
         Assert.Equal("Payment provider is temporarily unavailable.", outcome.FailureReason);
     }
 
@@ -174,6 +184,8 @@ public class PaymentProcessingBaselineTests
         Assert.False(outcome.IsBusinessFailure);
         Assert.True(outcome.IsTechnicalFailure);
         Assert.False(outcome.IsRetriableTechnicalFailure);
+        Assert.True(outcome.IsTerminalProviderState);
+        Assert.Equal(PaymentProviderStateKind.Terminal, outcome.ProviderState);
         Assert.Equal("Payment provider rejected the request as non-retriable.", outcome.FailureReason);
     }
 
@@ -323,6 +335,7 @@ public class PaymentProcessingBaselineTests
 
         Assert.Equal("Payment provider is temporarily unavailable.", exception.Message);
         Assert.True(exception.IsRetriable);
+        Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, exception.ProviderState);
         Assert.Empty(db.ChangeTracker.Entries<Payment>());
         Assert.Empty(bus.Published);
     }
@@ -365,6 +378,7 @@ public class PaymentProcessingBaselineTests
 
         Assert.Equal("Payment provider rejected the request as non-retriable.", exception.Message);
         Assert.False(exception.IsRetriable);
+        Assert.Equal(PaymentProviderStateKind.Terminal, exception.ProviderState);
         Assert.Empty(db.ChangeTracker.Entries<Payment>());
         Assert.Empty(bus.Published);
     }

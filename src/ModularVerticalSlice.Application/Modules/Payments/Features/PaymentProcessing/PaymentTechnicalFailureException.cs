@@ -6,7 +6,8 @@ namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProc
 /// </summary>
 public sealed class PaymentTechnicalFailureException(
     string message,
-    bool isRetriable) : Exception(message)
+    bool isRetriable,
+    Domain.PaymentProviderStateKind providerState) : Exception(message)
 {
     /// <summary>
     /// Indicates whether the current technical failure is considered retriable by the baseline shaping.
@@ -14,14 +15,19 @@ public sealed class PaymentTechnicalFailureException(
     public bool IsRetriable { get; } = isRetriable;
 
     /// <summary>
+    /// Describes the local provider-state semantics inferred from the technical failure.
+    /// </summary>
+    public Domain.PaymentProviderStateKind ProviderState { get; } = providerState;
+
+    /// <summary>
     /// Creates a retriable technical-failure exception.
     /// </summary>
     public static PaymentTechnicalFailureException Retriable(string message) =>
-        new(message, true);
+        new(message, true, Domain.PaymentProviderStateKind.DegradedRecoverable);
 
     /// <summary>
     /// Creates a non-retriable technical-failure exception.
     /// </summary>
     public static PaymentTechnicalFailureException NonRetriable(string message) =>
-        new(message, false);
+        new(message, false, Domain.PaymentProviderStateKind.Terminal);
 }

@@ -48,7 +48,8 @@ public static class PaymentOutcomePolicy
 public sealed record PaymentOutcomeDecision(
     PaymentOutcomeKind Kind,
     string? FailureReason,
-    bool IsRetriableTechnicalFailure = false)
+    bool IsRetriableTechnicalFailure = false,
+    PaymentProviderStateKind? ProviderState = null)
 {
     /// <summary>
     /// True when the payment completed successfully.
@@ -64,6 +65,18 @@ public sealed record PaymentOutcomeDecision(
     /// True when the payment failed for a technical reason and should be retried by runtime infrastructure.
     /// </summary>
     public bool IsTechnicalFailure => Kind == PaymentOutcomeKind.TechnicalFailure;
+
+    /// <summary>
+    /// True when the technical failure suggests a degraded-but-recoverable provider state.
+    /// </summary>
+    public bool IsRecoverableProviderState =>
+        ProviderState == PaymentProviderStateKind.DegradedRecoverable;
+
+    /// <summary>
+    /// True when the technical failure suggests a terminal provider state for the current request shape.
+    /// </summary>
+    public bool IsTerminalProviderState =>
+        ProviderState == PaymentProviderStateKind.Terminal;
 
     /// <summary>
     /// Creates a successful payment outcome.
@@ -83,7 +96,8 @@ public sealed record PaymentOutcomeDecision(
         new(
             PaymentOutcomeKind.TechnicalFailure,
             failureReason,
-            true);
+            true,
+            PaymentProviderStateKind.DegradedRecoverable);
 
     /// <summary>
     /// Creates a non-retriable technical-failure outcome for terminal provider-facing failures.
@@ -92,7 +106,8 @@ public sealed record PaymentOutcomeDecision(
         new(
             PaymentOutcomeKind.TechnicalFailure,
             failureReason,
-            false);
+            false,
+            PaymentProviderStateKind.Terminal);
 }
 
 /// <summary>
@@ -114,4 +129,20 @@ public enum PaymentOutcomeKind
     /// The payment could not be processed because of a technical failure.
     /// </summary>
     TechnicalFailure = 3
+}
+
+/// <summary>
+/// Describes the local provider-state semantics inferred from a technical failure.
+/// </summary>
+public enum PaymentProviderStateKind
+{
+    /// <summary>
+    /// The provider looks degraded but recoverable for future attempts.
+    /// </summary>
+    DegradedRecoverable = 1,
+
+    /// <summary>
+    /// The provider state for the current request shape looks terminal.
+    /// </summary>
+    Terminal = 2
 }
