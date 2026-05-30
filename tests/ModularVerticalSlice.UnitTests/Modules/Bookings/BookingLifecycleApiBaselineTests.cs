@@ -435,6 +435,57 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that the pragmatic composite query reflects the current Catalog data from the shared store.
+    /// </summary>
+    [Fact]
+    public async Task GetCustomerBookings_Should_Reflect_Current_Event_Data_From_Shared_Store()
+    {
+        await using var db = CreateDbContext();
+        var currentUserId = "user-1";
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Initial title",
+            Date = new DateTimeOffset(2026, 6, 1, 18, 0, 0, TimeSpan.Zero),
+            TicketPrice = 25m,
+            AvailableTickets = 10
+        });
+
+        db.Bookings.Add(new Booking
+        {
+            Id = Guid.NewGuid(),
+            EventId = eventId,
+            Quantity = 1,
+            Status = BookingStatus.Pending,
+            UserId = currentUserId,
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 11, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(currentUserId));
+
+        var initial = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+        Assert.True(initial.IsSuccess);
+        Assert.Single(initial.Value);
+        Assert.Equal("Initial title", initial.Value[0].EventTitle);
+
+        var @event = await db.Events.SingleAsync(x => x.Id == eventId);
+        @event.Title = "Renamed title";
+        @event.Date = new DateTimeOffset(2026, 6, 4, 21, 0, 0, TimeSpan.Zero);
+        await db.SaveChangesAsync();
+
+        var updated = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+
+        Assert.True(updated.IsSuccess);
+        Assert.Single(updated.Value);
+        Assert.Equal("Renamed title", updated.Value[0].EventTitle);
+        Assert.Equal(new DateTimeOffset(2026, 6, 4, 21, 0, 0, TimeSpan.Zero), updated.Value[0].EventDate);
+    }
+
+    /// <summary>
     /// Verifies that the current-user bookings query requires an authenticated user.
     /// </summary>
     [Fact]
