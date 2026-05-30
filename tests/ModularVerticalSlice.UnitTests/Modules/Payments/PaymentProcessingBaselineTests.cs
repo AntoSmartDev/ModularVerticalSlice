@@ -54,6 +54,9 @@ public class PaymentProcessingBaselineTests
         Assert.True(outcome.IsBusinessFailure);
         Assert.False(outcome.IsTechnicalFailure);
         Assert.False(outcome.IsRetriableTechnicalFailure);
+        Assert.False(outcome.IsRecoverableProviderState);
+        Assert.False(outcome.IsTerminalProviderState);
+        Assert.Null(outcome.ProviderState);
         Assert.Equal("declined", outcome.FailureReason);
     }
 
@@ -117,6 +120,33 @@ public class PaymentProcessingBaselineTests
         Assert.Equal("terminal", exception.Message);
         Assert.False(exception.IsRetriable);
         Assert.Equal(PaymentProviderStateKind.Terminal, exception.ProviderState);
+    }
+
+    /// <summary>
+    /// Verifies that provider-state semantics remain absent from pure business failures.
+    /// </summary>
+    [Fact]
+    public void PaymentOutcomeDecision_BusinessDecline_Should_Not_Carry_Provider_State()
+    {
+        var outcome = PaymentOutcomePolicy.Decide("declined-user", 1);
+
+        Assert.True(outcome.IsBusinessFailure);
+        Assert.False(outcome.IsTechnicalFailure);
+        Assert.Null(outcome.ProviderState);
+        Assert.False(outcome.IsRecoverableProviderState);
+        Assert.False(outcome.IsTerminalProviderState);
+    }
+
+    /// <summary>
+    /// Verifies that retryability and provider-state semantics stay explicit together on technical failures.
+    /// </summary>
+    [Fact]
+    public void PaymentTechnicalFailureException_DegradedRecoverable_Should_Carry_Provider_State_And_Retryability()
+    {
+        var exception = PaymentTechnicalFailureException.DegradedRecoverable("temporary");
+
+        Assert.True(exception.IsRetriable);
+        Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, exception.ProviderState);
     }
 
     /// <summary>
