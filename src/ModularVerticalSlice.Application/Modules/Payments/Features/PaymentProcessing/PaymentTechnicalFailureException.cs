@@ -20,14 +20,26 @@ public sealed class PaymentTechnicalFailureException(
     public Domain.PaymentProviderStateKind ProviderState { get; } = providerState;
 
     /// <summary>
+    /// Creates a technical-failure exception for a degraded-but-recoverable provider state.
+    /// </summary>
+    public static PaymentTechnicalFailureException DegradedRecoverable(string message) =>
+        new(message, true, Domain.PaymentProviderStateKind.DegradedRecoverable);
+
+    /// <summary>
+    /// Creates a technical-failure exception for a terminal provider state.
+    /// </summary>
+    public static PaymentTechnicalFailureException Terminal(string message) =>
+        new(message, false, Domain.PaymentProviderStateKind.Terminal);
+
+    /// <summary>
     /// Creates a retriable technical-failure exception.
     /// </summary>
     public static PaymentTechnicalFailureException Retriable(string message) =>
-        new(message, true, Domain.PaymentProviderStateKind.DegradedRecoverable);
+        DegradedRecoverable(message);
 
     /// <summary>
     /// Creates a non-retriable technical-failure exception.
     /// </summary>
     public static PaymentTechnicalFailureException NonRetriable(string message) =>
-        new(message, false, Domain.PaymentProviderStateKind.Terminal);
+        Terminal(message);
 }
