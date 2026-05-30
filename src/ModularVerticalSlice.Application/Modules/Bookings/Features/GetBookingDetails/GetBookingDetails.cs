@@ -21,8 +21,12 @@ public sealed record GetBookingDetailsQuery(Guid BookingId);
 /// </summary>
 public sealed record BookingDetailsReadModel(
     Guid Id,
+    string EventTitle,
+    DateTimeOffset EventDate,
     Guid EventId,
     int Quantity,
+    decimal TicketPrice,
+    decimal TotalPrice,
     BookingStatus Status,
     string UserId,
     Guid ClientRequestId,
@@ -32,7 +36,7 @@ public sealed record BookingDetailsReadModel(
 /// Handles the query that returns details for a specific booking.
 /// </summary>
 public sealed class GetBookingDetailsHandler(
-    IBookingReadDbContext readDb,
+    IBookingCatalogReadDbContext readDb,
     ICurrentUserContext currentUserContext)
 {
     /// <summary>
@@ -50,16 +54,26 @@ public sealed class GetBookingDetailsHandler(
                     "The current user is required to read booking details."));
         }
 
+        // Pragmatic cross-module read composition:
+        // one query on the shared store, at the cost of weaker read isolation.
         var booking = await readDb.Bookings
             .Where(x => x.Id == query.BookingId && x.UserId == currentUserContext.UserId)
-            .Select(x => new BookingDetailsReadModel(
-                x.Id,
-                x.EventId,
-                x.Quantity,
-                x.Status,
-                x.UserId,
-                x.ClientRequestId,
-                x.CreatedAt))
+            .Join(
+                readDb.Events,
+                currentBooking => currentBooking.EventId,
+                @event => @event.Id,
+                (currentBooking, @event) => new BookingDetailsReadModel(
+                    currentBooking.Id,
+                    @event.Title,
+                    @event.Date,
+                    currentBooking.EventId,
+                    currentBooking.Quantity,
+                    @event.TicketPrice,
+                    currentBooking.Quantity * @event.TicketPrice,
+                    currentBooking.Status,
+                    currentBooking.UserId,
+                    currentBooking.ClientRequestId,
+                    currentBooking.CreatedAt))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (booking is null)

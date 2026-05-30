@@ -30,6 +30,7 @@ public static class PersistenceServiceCollectionExtensions
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ICatalogReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<ICatalogWriteDbContext>(sp => sp.GetRequiredService<AppDbContext>());
+        services.AddScoped<IBookingCatalogReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IBookingReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IBookingWriteDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<IPaymentReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());

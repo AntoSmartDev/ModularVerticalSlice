@@ -366,12 +366,32 @@ public class BookingLifecycleApiBaselineTests
     {
         await using var db = CreateDbContext();
         var currentUserId = "user-1";
+        var firstEventId = Guid.NewGuid();
+        var secondEventId = Guid.NewGuid();
+
+        db.Events.AddRange(
+            new Event
+            {
+                Id = firstEventId,
+                Title = "OpenAI Build Day",
+                Date = new DateTimeOffset(2026, 6, 1, 18, 0, 0, TimeSpan.Zero),
+                TicketPrice = 25m,
+                AvailableTickets = 10
+            },
+            new Event
+            {
+                Id = secondEventId,
+                Title = "Agent Systems Live",
+                Date = new DateTimeOffset(2026, 6, 2, 20, 0, 0, TimeSpan.Zero),
+                TicketPrice = 40m,
+                AvailableTickets = 10
+            });
 
         db.Bookings.AddRange(
             new Booking
             {
                 Id = Guid.NewGuid(),
-                EventId = Guid.NewGuid(),
+                EventId = firstEventId,
                 Quantity = 1,
                 Status = BookingStatus.Pending,
                 UserId = currentUserId,
@@ -381,7 +401,7 @@ public class BookingLifecycleApiBaselineTests
             new Booking
             {
                 Id = Guid.NewGuid(),
-                EventId = Guid.NewGuid(),
+                EventId = secondEventId,
                 Quantity = 2,
                 Status = BookingStatus.Confirmed,
                 UserId = currentUserId,
@@ -391,7 +411,7 @@ public class BookingLifecycleApiBaselineTests
             new Booking
             {
                 Id = Guid.NewGuid(),
-                EventId = Guid.NewGuid(),
+                EventId = secondEventId,
                 Quantity = 3,
                 Status = BookingStatus.Pending,
                 UserId = "user-2",
@@ -409,6 +429,9 @@ public class BookingLifecycleApiBaselineTests
         Assert.All(result.Value, booking => Assert.Equal(currentUserId, db.Bookings.Single(x => x.Id == booking.Id).UserId));
         Assert.Equal(BookingStatus.Confirmed, result.Value[0].Status);
         Assert.Equal(BookingStatus.Pending, result.Value[1].Status);
+        Assert.Equal("Agent Systems Live", result.Value[0].EventTitle);
+        Assert.Equal(new DateTimeOffset(2026, 6, 2, 20, 0, 0, TimeSpan.Zero), result.Value[0].EventDate);
+        Assert.Equal("OpenAI Build Day", result.Value[1].EventTitle);
     }
 
     /// <summary>
@@ -437,6 +460,15 @@ public class BookingLifecycleApiBaselineTests
         var bookingId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
 
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "OpenAI Conf",
+            Date = new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero),
+            TicketPrice = 49.90m,
+            AvailableTickets = 10
+        });
+
         db.Bookings.Add(new Booking
         {
             Id = bookingId,
@@ -455,8 +487,12 @@ public class BookingLifecycleApiBaselineTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(bookingId, result.Value.Id);
+        Assert.Equal("OpenAI Conf", result.Value.EventTitle);
+        Assert.Equal(new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero), result.Value.EventDate);
         Assert.Equal(eventId, result.Value.EventId);
         Assert.Equal(2, result.Value.Quantity);
+        Assert.Equal(49.90m, result.Value.TicketPrice);
+        Assert.Equal(99.80m, result.Value.TotalPrice);
         Assert.Equal("user-1", result.Value.UserId);
     }
 

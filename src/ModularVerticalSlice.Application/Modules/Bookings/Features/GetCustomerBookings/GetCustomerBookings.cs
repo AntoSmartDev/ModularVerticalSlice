@@ -20,6 +20,8 @@ public sealed record GetCustomerBookingsQuery;
 /// </summary>
 public sealed record CustomerBookingReadModel(
     Guid Id,
+    string EventTitle,
+    DateTimeOffset EventDate,
     Guid EventId,
     int Quantity,
     BookingStatus Status,
@@ -29,7 +31,7 @@ public sealed record CustomerBookingReadModel(
 /// Handles the query that returns bookings owned by the current user.
 /// </summary>
 public sealed class GetCustomerBookingsHandler(
-    IBookingReadDbContext readDb,
+    IBookingCatalogReadDbContext readDb,
     ICurrentUserContext currentUserContext)
 {
     /// <summary>
@@ -47,15 +49,28 @@ public sealed class GetCustomerBookingsHandler(
                     "The current user is required to read bookings."));
         }
 
+        // Pragmatic cross-module read composition:
+        // one query on the shared store, at the cost of weaker read isolation.
         var bookings = await readDb.Bookings
             .Where(x => x.UserId == currentUserContext.UserId)
-            .OrderByDescending(x => x.CreatedAt)
+            .Join(
+                readDb.Events,
+                booking => booking.EventId,
+                @event => @event.Id,
+                (booking, @event) => new
+                {
+                    Booking = booking,
+                    Event = @event
+                })
+            .OrderByDescending(x => x.Booking.CreatedAt)
             .Select(x => new CustomerBookingReadModel(
-                x.Id,
-                x.EventId,
-                x.Quantity,
-                x.Status,
-                x.CreatedAt))
+                x.Booking.Id,
+                x.Event.Title,
+                x.Event.Date,
+                x.Booking.EventId,
+                x.Booking.Quantity,
+                x.Booking.Status,
+                x.Booking.CreatedAt))
             .ToListAsync(cancellationToken);
 
         return Result.Success<IReadOnlyList<CustomerBookingReadModel>>(bookings);

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
@@ -17,6 +17,7 @@ namespace ModularVerticalSlice.Persistence;
 /// </remarks>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
     DbContext(options),
+    IBookingCatalogReadDbContext,
     IBookingReadDbContext,
     IBookingWriteDbContext,
     ICatalogReadDbContext,
@@ -50,6 +51,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
     IQueryable<Event> ICatalogReadDbContext.Events => Set<Event>().AsNoTracking();
 
     IQueryable<Booking> IBookingReadDbContext.Bookings => Set<Booking>().AsNoTracking();
+
+    IQueryable<Booking> IBookingCatalogReadDbContext.Bookings => Set<Booking>().AsNoTracking();
+
+    IQueryable<Event> IBookingCatalogReadDbContext.Events => Set<Event>().AsNoTracking();
 
     IQueryable<Payment> IPaymentReadDbContext.Payments => Set<Payment>().AsNoTracking();
 }
