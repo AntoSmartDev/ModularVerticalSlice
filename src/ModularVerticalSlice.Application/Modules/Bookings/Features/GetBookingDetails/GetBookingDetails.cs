@@ -54,8 +54,10 @@ public sealed class GetBookingDetailsHandler(
                     "The current user is required to read booking details."));
         }
 
-        // Pragmatic cross-module read composition:
+        // Pragmatic same-store read-side composition:
         // one query on the shared store, at the cost of weaker read isolation.
+        // This is a local query compromise, not the default pattern for
+        // cross-module collaboration or for write flows.
         var booking = await readDb.Bookings
             .Where(x => x.Id == query.BookingId && x.UserId == currentUserContext.UserId)
             .Join(
