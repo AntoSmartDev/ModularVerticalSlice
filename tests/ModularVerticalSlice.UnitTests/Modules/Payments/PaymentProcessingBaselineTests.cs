@@ -74,7 +74,10 @@ public class PaymentProcessingBaselineTests
         Assert.True(outcome.IsRetriableTechnicalFailure);
         Assert.True(outcome.IsRecoverableProviderState);
         Assert.False(outcome.IsTerminalProviderState);
+        Assert.True(outcome.ShouldUseRuntimeManagedRecovery);
+        Assert.False(outcome.ShouldEscalateOrRequireManualIntervention);
         Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, outcome.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.RuntimeManagedRecovery, outcome.RecoveryDecision);
         Assert.Equal("temporary", outcome.FailureReason);
     }
 
@@ -92,7 +95,10 @@ public class PaymentProcessingBaselineTests
         Assert.False(outcome.IsRetriableTechnicalFailure);
         Assert.False(outcome.IsRecoverableProviderState);
         Assert.True(outcome.IsTerminalProviderState);
+        Assert.False(outcome.ShouldUseRuntimeManagedRecovery);
+        Assert.True(outcome.ShouldEscalateOrRequireManualIntervention);
         Assert.Equal(PaymentProviderStateKind.Terminal, outcome.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.EscalateOrManualIntervention, outcome.RecoveryDecision);
         Assert.Equal("terminal", outcome.FailureReason);
     }
 
@@ -107,6 +113,7 @@ public class PaymentProcessingBaselineTests
         Assert.Equal("temporary", exception.Message);
         Assert.True(exception.IsRetriable);
         Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, exception.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.RuntimeManagedRecovery, exception.RecoveryDecision);
     }
 
     /// <summary>
@@ -120,6 +127,7 @@ public class PaymentProcessingBaselineTests
         Assert.Equal("terminal", exception.Message);
         Assert.False(exception.IsRetriable);
         Assert.Equal(PaymentProviderStateKind.Terminal, exception.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.EscalateOrManualIntervention, exception.RecoveryDecision);
     }
 
     /// <summary>
@@ -133,8 +141,11 @@ public class PaymentProcessingBaselineTests
         Assert.True(outcome.IsBusinessFailure);
         Assert.False(outcome.IsTechnicalFailure);
         Assert.Null(outcome.ProviderState);
+        Assert.Null(outcome.RecoveryDecision);
         Assert.False(outcome.IsRecoverableProviderState);
         Assert.False(outcome.IsTerminalProviderState);
+        Assert.False(outcome.ShouldUseRuntimeManagedRecovery);
+        Assert.False(outcome.ShouldEscalateOrRequireManualIntervention);
     }
 
     /// <summary>
@@ -147,6 +158,7 @@ public class PaymentProcessingBaselineTests
 
         Assert.True(exception.IsRetriable);
         Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, exception.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.RuntimeManagedRecovery, exception.RecoveryDecision);
     }
 
     /// <summary>
@@ -197,6 +209,7 @@ public class PaymentProcessingBaselineTests
         Assert.True(outcome.IsRetriableTechnicalFailure);
         Assert.True(outcome.IsRecoverableProviderState);
         Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, outcome.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.RuntimeManagedRecovery, outcome.RecoveryDecision);
         Assert.Equal("Payment provider is temporarily unavailable.", outcome.FailureReason);
     }
 
@@ -216,6 +229,7 @@ public class PaymentProcessingBaselineTests
         Assert.False(outcome.IsRetriableTechnicalFailure);
         Assert.True(outcome.IsTerminalProviderState);
         Assert.Equal(PaymentProviderStateKind.Terminal, outcome.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.EscalateOrManualIntervention, outcome.RecoveryDecision);
         Assert.Equal("Payment provider rejected the request as non-retriable.", outcome.FailureReason);
     }
 

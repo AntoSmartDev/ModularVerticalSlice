@@ -49,7 +49,8 @@ public sealed record PaymentOutcomeDecision(
     PaymentOutcomeKind Kind,
     string? FailureReason,
     bool IsRetriableTechnicalFailure = false,
-    PaymentProviderStateKind? ProviderState = null)
+    PaymentProviderStateKind? ProviderState = null,
+    PaymentRecoveryDecisionKind? RecoveryDecision = null)
 {
     /// <summary>
     /// True when the payment completed successfully.
@@ -79,6 +80,18 @@ public sealed record PaymentOutcomeDecision(
         ProviderState == PaymentProviderStateKind.Terminal;
 
     /// <summary>
+    /// True when the technical failure suggests runtime-managed recovery.
+    /// </summary>
+    public bool ShouldUseRuntimeManagedRecovery =>
+        RecoveryDecision == PaymentRecoveryDecisionKind.RuntimeManagedRecovery;
+
+    /// <summary>
+    /// True when the technical failure suggests escalation or manual intervention.
+    /// </summary>
+    public bool ShouldEscalateOrRequireManualIntervention =>
+        RecoveryDecision == PaymentRecoveryDecisionKind.EscalateOrManualIntervention;
+
+    /// <summary>
     /// Creates a successful payment outcome.
     /// </summary>
     public static PaymentOutcomeDecision Success() => new(PaymentOutcomeKind.Success, null);
@@ -97,7 +110,8 @@ public sealed record PaymentOutcomeDecision(
             PaymentOutcomeKind.TechnicalFailure,
             failureReason,
             true,
-            PaymentProviderStateKind.DegradedRecoverable);
+            PaymentProviderStateKind.DegradedRecoverable,
+            PaymentRecoveryDecisionKind.RuntimeManagedRecovery);
 
     /// <summary>
     /// Creates a non-retriable technical-failure outcome for terminal provider-facing failures.
@@ -107,7 +121,8 @@ public sealed record PaymentOutcomeDecision(
             PaymentOutcomeKind.TechnicalFailure,
             failureReason,
             false,
-            PaymentProviderStateKind.Terminal);
+            PaymentProviderStateKind.Terminal,
+            PaymentRecoveryDecisionKind.EscalateOrManualIntervention);
 }
 
 /// <summary>
@@ -145,4 +160,20 @@ public enum PaymentProviderStateKind
     /// The provider state for the current request shape looks terminal.
     /// </summary>
     Terminal = 2
+}
+
+/// <summary>
+/// Describes the local recovery decision suggested after a technical failure.
+/// </summary>
+public enum PaymentRecoveryDecisionKind
+{
+    /// <summary>
+    /// The failure should stay in runtime-managed recovery semantics.
+    /// </summary>
+    RuntimeManagedRecovery = 1,
+
+    /// <summary>
+    /// The failure suggests escalation or manual intervention.
+    /// </summary>
+    EscalateOrManualIntervention = 2
 }

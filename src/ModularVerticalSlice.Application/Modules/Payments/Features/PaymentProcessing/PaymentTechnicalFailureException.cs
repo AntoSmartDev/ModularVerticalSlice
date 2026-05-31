@@ -7,7 +7,8 @@ namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProc
 public sealed class PaymentTechnicalFailureException(
     string message,
     bool isRetriable,
-    Domain.PaymentProviderStateKind providerState) : Exception(message)
+    Domain.PaymentProviderStateKind providerState,
+    Domain.PaymentRecoveryDecisionKind recoveryDecision) : Exception(message)
 {
     /// <summary>
     /// Indicates whether the current technical failure is considered retriable by the baseline shaping.
@@ -20,16 +21,29 @@ public sealed class PaymentTechnicalFailureException(
     public Domain.PaymentProviderStateKind ProviderState { get; } = providerState;
 
     /// <summary>
+    /// Describes the local recovery decision suggested after the technical failure.
+    /// </summary>
+    public Domain.PaymentRecoveryDecisionKind RecoveryDecision { get; } = recoveryDecision;
+
+    /// <summary>
     /// Creates a technical-failure exception for a degraded-but-recoverable provider state.
     /// </summary>
     public static PaymentTechnicalFailureException DegradedRecoverable(string message) =>
-        new(message, true, Domain.PaymentProviderStateKind.DegradedRecoverable);
+        new(
+            message,
+            true,
+            Domain.PaymentProviderStateKind.DegradedRecoverable,
+            Domain.PaymentRecoveryDecisionKind.RuntimeManagedRecovery);
 
     /// <summary>
     /// Creates a technical-failure exception for a terminal provider state.
     /// </summary>
     public static PaymentTechnicalFailureException Terminal(string message) =>
-        new(message, false, Domain.PaymentProviderStateKind.Terminal);
+        new(
+            message,
+            false,
+            Domain.PaymentProviderStateKind.Terminal,
+            Domain.PaymentRecoveryDecisionKind.EscalateOrManualIntervention);
 
     /// <summary>
     /// Creates a retriable technical-failure exception.
