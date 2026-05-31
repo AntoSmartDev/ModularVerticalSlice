@@ -108,7 +108,7 @@ public class PaymentProcessingBaselineTests
     [Fact]
     public void PaymentTechnicalFailureException_Retriable_Should_Set_Retry_Shape()
     {
-        var exception = PaymentTechnicalFailureException.DegradedRecoverable("temporary");
+        var exception = PaymentTechnicalFailureException.RuntimeManagedRecovery("temporary");
 
         Assert.Equal("temporary", exception.Message);
         Assert.True(exception.IsRetriable);
@@ -122,7 +122,7 @@ public class PaymentProcessingBaselineTests
     [Fact]
     public void PaymentTechnicalFailureException_NonRetriable_Should_Set_Terminal_Shape()
     {
-        var exception = PaymentTechnicalFailureException.Terminal("terminal");
+        var exception = PaymentTechnicalFailureException.EscalateOrManualIntervention("terminal");
 
         Assert.Equal("terminal", exception.Message);
         Assert.False(exception.IsRetriable);

@@ -46,6 +46,18 @@ public sealed class PaymentTechnicalFailureException(
             Domain.PaymentRecoveryDecisionKind.EscalateOrManualIntervention);
 
     /// <summary>
+    /// Creates a technical-failure exception that stays in runtime-managed recovery semantics.
+    /// </summary>
+    public static PaymentTechnicalFailureException RuntimeManagedRecovery(string message) =>
+        DegradedRecoverable(message);
+
+    /// <summary>
+    /// Creates a technical-failure exception that suggests escalation or manual intervention.
+    /// </summary>
+    public static PaymentTechnicalFailureException EscalateOrManualIntervention(string message) =>
+        Terminal(message);
+
+    /// <summary>
     /// Creates a retriable technical-failure exception.
     /// </summary>
     public static PaymentTechnicalFailureException Retriable(string message) =>

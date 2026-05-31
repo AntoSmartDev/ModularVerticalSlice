@@ -97,15 +97,22 @@ public sealed class PaymentProcessingHandler(
     {
         var message = outcome.FailureReason ?? "The payment provider failed unexpectedly.";
 
-        return outcome.ProviderState switch
+        return outcome.RecoveryDecision switch
         {
-            Domain.PaymentProviderStateKind.DegradedRecoverable =>
-                PaymentTechnicalFailureException.DegradedRecoverable(message),
-            Domain.PaymentProviderStateKind.Terminal =>
-                PaymentTechnicalFailureException.Terminal(message),
-            _ => outcome.IsRetriableTechnicalFailure
-                ? PaymentTechnicalFailureException.Retriable(message)
-                : PaymentTechnicalFailureException.NonRetriable(message)
+            Domain.PaymentRecoveryDecisionKind.RuntimeManagedRecovery =>
+                PaymentTechnicalFailureException.RuntimeManagedRecovery(message),
+            Domain.PaymentRecoveryDecisionKind.EscalateOrManualIntervention =>
+                PaymentTechnicalFailureException.EscalateOrManualIntervention(message),
+            _ => outcome.ProviderState switch
+            {
+                Domain.PaymentProviderStateKind.DegradedRecoverable =>
+                    PaymentTechnicalFailureException.DegradedRecoverable(message),
+                Domain.PaymentProviderStateKind.Terminal =>
+                    PaymentTechnicalFailureException.Terminal(message),
+                _ => outcome.IsRetriableTechnicalFailure
+                    ? PaymentTechnicalFailureException.Retriable(message)
+                    : PaymentTechnicalFailureException.NonRetriable(message)
+            }
         };
     }
 }
