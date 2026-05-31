@@ -380,6 +380,7 @@ public class PaymentProcessingBaselineTests
         Assert.Equal("Payment provider is temporarily unavailable.", exception.Message);
         Assert.True(exception.IsRetriable);
         Assert.Equal(PaymentProviderStateKind.DegradedRecoverable, exception.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.RuntimeManagedRecovery, exception.RecoveryDecision);
         Assert.Empty(db.ChangeTracker.Entries<Payment>());
         Assert.Empty(bus.Published);
     }
@@ -423,6 +424,7 @@ public class PaymentProcessingBaselineTests
         Assert.Equal("Payment provider rejected the request as non-retriable.", exception.Message);
         Assert.False(exception.IsRetriable);
         Assert.Equal(PaymentProviderStateKind.Terminal, exception.ProviderState);
+        Assert.Equal(PaymentRecoveryDecisionKind.EscalateOrManualIntervention, exception.RecoveryDecision);
         Assert.Empty(db.ChangeTracker.Entries<Payment>());
         Assert.Empty(bus.Published);
     }
