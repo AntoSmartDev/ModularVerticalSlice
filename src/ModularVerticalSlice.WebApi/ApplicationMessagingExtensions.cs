@@ -1,4 +1,5 @@
 using ModularVerticalSlice.Application.Modules.Bookings;
+using ModularVerticalSlice.Application.Modules.Payments;
 using Wolverine;
 using Wolverine.Postgresql;
 
@@ -25,6 +26,7 @@ public static class ApplicationMessagingExtensions
 
         options.Discovery.IncludeAssembly(typeof(BookingsModule).Assembly);
         options.Policies.AutoApplyTransactions();
+        PaymentsRuntimeRecoveryPolicies.Configure(options);
         options
             .PersistMessagesWithPostgresql(connectionString, "messaging")
             .EnableMessageTransport(_ => { });
