@@ -61,4 +61,36 @@ public class PaymentsRuntimeRecoveryBaselineTests
 
         Assert.Equal(baselineCount + 2, options.Policies.Failures.Count());
     }
+
+    /// <summary>
+    /// Verifies that the runtime-managed recovery branch is observable as an explicit runtime-retry route.
+    /// </summary>
+    [Fact]
+    public void DescribeRuntimeObservability_Should_Map_Runtime_Managed_Recovery_To_Runtime_Retry()
+    {
+        var exception = PaymentTechnicalFailureException.RuntimeManagedRecovery("temporary");
+
+        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+
+        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName, route.PolicyName);
+        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.RuntimeRetryRoute, route.RouteName);
+        Assert.True(route.UsesRuntimeRetry);
+        Assert.False(route.UsesErrorQueue);
+    }
+
+    /// <summary>
+    /// Verifies that the escalation branch is observable as an explicit error-queue route.
+    /// </summary>
+    [Fact]
+    public void DescribeRuntimeObservability_Should_Map_Escalation_To_Error_Queue()
+    {
+        var exception = PaymentTechnicalFailureException.EscalateOrManualIntervention("terminal");
+
+        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+
+        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName, route.PolicyName);
+        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.ErrorQueueRoute, route.RouteName);
+        Assert.False(route.UsesRuntimeRetry);
+        Assert.True(route.UsesErrorQueue);
+    }
 }
