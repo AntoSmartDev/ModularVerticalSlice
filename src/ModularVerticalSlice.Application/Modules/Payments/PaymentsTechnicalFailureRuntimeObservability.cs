@@ -33,6 +33,16 @@ public static class PaymentsTechnicalFailureRuntimeObservability
     public const string ErrorQueueRoute = "ErrorQueue";
 
     /// <summary>
+    /// Canonical cooldown sequence used by the Payments runtime-managed recovery branch.
+    /// </summary>
+    public static readonly IReadOnlyList<TimeSpan> RuntimeRecoveryCooldowns =
+    [
+        TimeSpan.FromSeconds(1),
+        TimeSpan.FromSeconds(5),
+        TimeSpan.FromSeconds(15)
+    ];
+
+    /// <summary>
     /// Describes how the current Payments runtime baseline will expose a technical failure.
     /// </summary>
     public static PaymentsTechnicalFailureRuntimeRoute Describe(
@@ -44,13 +54,15 @@ public static class PaymentsTechnicalFailureRuntimeObservability
                 RuntimeManagedRecoveryPolicyName,
                 RuntimeRetryRoute,
                 UsesRuntimeRetry: true,
-                UsesErrorQueue: false),
+                UsesErrorQueue: false,
+                Cooldowns: RuntimeRecoveryCooldowns),
 
             PaymentRecoveryDecisionKind.EscalateOrManualIntervention => new PaymentsTechnicalFailureRuntimeRoute(
                 EscalationToDlqPolicyName,
                 ErrorQueueRoute,
                 UsesRuntimeRetry: false,
-                UsesErrorQueue: true),
+                UsesErrorQueue: true,
+                Cooldowns: []),
 
             _ => throw new InvalidOperationException(
                 $"Unsupported Payments recovery decision '{exception.RecoveryDecision}'.")
@@ -65,4 +77,5 @@ public sealed record PaymentsTechnicalFailureRuntimeRoute(
     string PolicyName,
     string RouteName,
     bool UsesRuntimeRetry,
-    bool UsesErrorQueue);
+    bool UsesErrorQueue,
+    IReadOnlyList<TimeSpan> Cooldowns);
