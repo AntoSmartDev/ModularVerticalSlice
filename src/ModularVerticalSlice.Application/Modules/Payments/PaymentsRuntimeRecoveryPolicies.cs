@@ -22,16 +22,18 @@ public static class PaymentsRuntimeRecoveryPolicies
     /// </summary>
     public static void Configure(WolverineOptions options)
     {
+        // Payments keeps technical-failure ownership in Wolverine policies.
+        // This baseline makes retry vs DLQ routing explicit without adding local retry loops.
         options.Policies
             .OnException<PaymentTechnicalFailureException>(
                 x => x.RecoveryDecision == PaymentRecoveryDecisionKind.RuntimeManagedRecovery,
-                "Payments runtime-managed recovery")
+                PaymentsTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName)
             .RetryWithCooldown(RuntimeRecoveryCooldowns);
 
         options.Policies
             .OnException<PaymentTechnicalFailureException>(
                 x => x.RecoveryDecision == PaymentRecoveryDecisionKind.EscalateOrManualIntervention,
-                "Payments escalation or manual intervention")
+                PaymentsTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName)
             .MoveToErrorQueue();
     }
 }
