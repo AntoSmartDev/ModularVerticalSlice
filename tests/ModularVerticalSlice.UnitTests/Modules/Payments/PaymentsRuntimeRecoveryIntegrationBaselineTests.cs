@@ -143,6 +143,64 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
         Assert.Contains(bus.Published, x => x is Envelope { Message: PaymentFailedEvent });
     }
 
+    /// <summary>
+    /// Verifies that the integrated runtime-retry route keeps the canonical cooldown sequence explicit.
+    /// </summary>
+    [Fact]
+    public async Task ProcessPayment_Retryable_Technical_Failure_Should_Preserve_Canonical_Cooldowns()
+    {
+        await using var db = CreateDbContext();
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Cooldown event",
+            Date = new DateTimeOffset(2026, 6, 20, 13, 0, 0, TimeSpan.Zero),
+            TicketPrice = 20m,
+            AvailableTickets = 10
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new PaymentProcessingHandler(
+            db,
+            db,
+            new FakePaymentGateway(),
+            new TestMessageContext(),
+            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 15, 0, TimeSpan.Zero)));
+
+        var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
+            handler.Handle(
+                new ProcessPaymentCommand(
+                    Guid.NewGuid(),
+                    eventId,
+                    "technical-failure-user",
+                    1),
+                CancellationToken.None));
+
+        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+
+        Assert.Equal(3, route.Cooldowns.Count);
+        Assert.Equal(TimeSpan.FromSeconds(1), route.Cooldowns[0]);
+        Assert.Equal(TimeSpan.FromSeconds(5), route.Cooldowns[1]);
+        Assert.Equal(TimeSpan.FromSeconds(15), route.Cooldowns[2]);
+    }
+
+    /// <summary>
+    /// Verifies that the integrated retry and DLQ routes stay explicitly distinct end-to-end.
+    /// </summary>
+    [Fact]
+    public async Task ProcessPayment_Technical_Failure_Routes_Should_Stay_Distinct_End_To_End()
+    {
+        var retryRoute = await ExecuteAndDescribeTechnicalFailure("technical-failure-user");
+        var dlqRoute = await ExecuteAndDescribeTechnicalFailure("technical-terminal-user");
+
+        Assert.NotEqual(retryRoute.PolicyName, dlqRoute.PolicyName);
+        Assert.NotEqual(retryRoute.RouteName, dlqRoute.RouteName);
+        Assert.NotEmpty(retryRoute.Cooldowns);
+        Assert.Empty(dlqRoute.Cooldowns);
+    }
+
     private static AppDbContext CreateDbContext()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
@@ -150,6 +208,41 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             .Options;
 
         return new AppDbContext(options);
+    }
+
+    private static async Task<PaymentsTechnicalFailureRuntimeRoute> ExecuteAndDescribeTechnicalFailure(
+        string userId)
+    {
+        await using var db = CreateDbContext();
+        var eventId = Guid.NewGuid();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Technical route event",
+            Date = new DateTimeOffset(2026, 6, 20, 14, 0, 0, TimeSpan.Zero),
+            TicketPrice = 20m,
+            AvailableTickets = 10
+        });
+        await db.SaveChangesAsync();
+
+        var handler = new PaymentProcessingHandler(
+            db,
+            db,
+            new FakePaymentGateway(),
+            new TestMessageContext(),
+            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 20, 0, TimeSpan.Zero)));
+
+        var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
+            handler.Handle(
+                new ProcessPaymentCommand(
+                    Guid.NewGuid(),
+                    eventId,
+                    userId,
+                    1),
+                CancellationToken.None));
+
+        return PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider
