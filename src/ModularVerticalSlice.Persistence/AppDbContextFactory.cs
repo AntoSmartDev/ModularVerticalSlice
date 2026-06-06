@@ -12,15 +12,13 @@ namespace ModularVerticalSlice.Persistence;
 /// </remarks>
 public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
-    private const string DefaultConnectionString =
-        "Host=localhost;Port=5432;Database=modularverticalslice;Username=postgres;Password=postgres";
-
     /// <inheritdoc />
     public AppDbContext CreateDbContext(string[] args)
     {
         var connectionString =
-            Environment.GetEnvironmentVariable("MODULAR_VERTICAL_SLICE_DATABASE") ??
-            DefaultConnectionString;
+            Environment.GetEnvironmentVariable("ConnectionStrings__Database") ??
+            throw new InvalidOperationException(
+                "Environment variable 'ConnectionStrings__Database' is required for EF Core design-time operations.");
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
         optionsBuilder.UseNpgsql(connectionString);

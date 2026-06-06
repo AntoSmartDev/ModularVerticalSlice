@@ -1,6 +1,7 @@
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Payments;
+using ModularVerticalSlice.Persistence;
 using Wolverine;
 using Wolverine.Postgresql;
 using Wolverine.RDBMS;
@@ -12,9 +13,6 @@ namespace ModularVerticalSlice.WebApi;
 /// </summary>
 public static class ApplicationMessagingExtensions
 {
-    private const string DefaultConnectionString =
-        "Host=localhost;Port=5432;Database=modularverticalslice;Username=postgres;Password=postgres";
-
     /// <summary>
     /// Applies the shared Wolverine messaging baseline for the application host.
     /// </summary>
@@ -24,7 +22,7 @@ public static class ApplicationMessagingExtensions
         this WolverineOptions options,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Database") ?? DefaultConnectionString;
+        var connectionString = configuration.GetRequiredDatabaseConnectionString();
 
         options.Discovery.IncludeAssembly(typeof(BookingsModule).Assembly);
         options.Policies.AutoApplyTransactions();

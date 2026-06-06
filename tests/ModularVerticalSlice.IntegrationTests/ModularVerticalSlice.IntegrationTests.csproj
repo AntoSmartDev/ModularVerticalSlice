@@ -25,4 +25,10 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\src\ModularVerticalSlice.WebApi\appsettings.Development.json"
+             Link="appsettings.Development.json"
+             CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

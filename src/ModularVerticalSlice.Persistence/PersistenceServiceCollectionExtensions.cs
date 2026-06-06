@@ -12,9 +12,6 @@ namespace ModularVerticalSlice.Persistence;
 /// </summary>
 public static class PersistenceServiceCollectionExtensions
 {
-    private const string DefaultConnectionString =
-        "Host=localhost;Port=5432;Database=modularverticalslice;Username=postgres;Password=postgres";
-
     /// <summary>
     /// Adds the application persistence baseline backed by PostgreSQL.
     /// </summary>
@@ -25,7 +22,7 @@ public static class PersistenceServiceCollectionExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Database") ?? DefaultConnectionString;
+        var connectionString = configuration.GetRequiredDatabaseConnectionString();
 
         services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
         services.AddScoped<ICatalogReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
