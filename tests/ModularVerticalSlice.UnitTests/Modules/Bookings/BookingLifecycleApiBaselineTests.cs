@@ -622,6 +622,42 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that the persistent saga state stays correlated by booking and does not duplicate domain state.
+    /// </summary>
+    [Fact]
+    public void BookingLifecycleSaga_Should_Expose_Minimum_Durable_State()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var startedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero);
+
+        var saga = new BookingLifecycleSaga
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            StartedAt = startedAt
+        };
+
+        Assert.IsAssignableFrom<Saga>(saga);
+        Assert.Equal(bookingId, saga.Id);
+        Assert.Equal(eventId, saga.EventId);
+        Assert.Equal(2, saga.Quantity);
+        Assert.Equal(startedAt, saga.StartedAt);
+
+        var declaredState = typeof(BookingLifecycleSaga)
+            .GetProperties()
+            .Where(property => property.DeclaringType == typeof(BookingLifecycleSaga))
+            .Select(property => property.Name)
+            .Order()
+            .ToArray();
+
+        Assert.Equal(
+            [nameof(BookingLifecycleSaga.EventId), nameof(BookingLifecycleSaga.Id), nameof(BookingLifecycleSaga.Quantity), nameof(BookingLifecycleSaga.StartedAt)],
+            declaredState);
+    }
+
+    /// <summary>
     /// Verifies that the saga baseline accepts the initial booking-created handoff.
     /// </summary>
     [Fact]

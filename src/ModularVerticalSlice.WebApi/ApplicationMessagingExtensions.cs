@@ -1,7 +1,9 @@
 using ModularVerticalSlice.Application.Modules.Bookings;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Payments;
 using Wolverine;
 using Wolverine.Postgresql;
+using Wolverine.RDBMS;
 
 namespace ModularVerticalSlice.WebApi;
 
@@ -26,6 +28,7 @@ public static class ApplicationMessagingExtensions
 
         options.Discovery.IncludeAssembly(typeof(BookingsModule).Assembly);
         options.Policies.AutoApplyTransactions();
+        options.AddSagaType<BookingLifecycleSaga>("booking_lifecycle_sagas");
         PaymentsRuntimeRecoveryPolicies.Configure(options);
         options
             .PersistMessagesWithPostgresql(connectionString, "messaging")
