@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
@@ -15,6 +16,7 @@ using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine;
+using Wolverine.Persistence.Sagas;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
 
@@ -658,26 +660,59 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that every saga runtime method explicitly correlates its message through BookingId.
+    /// </summary>
+    [Fact]
+    public void BookingLifecycleSaga_Should_Explicitly_Correlate_All_Runtime_Messages()
+    {
+        var runtimeMethods = typeof(BookingLifecycleSaga)
+            .GetMethods()
+            .Where(method =>
+                method.DeclaringType == typeof(BookingLifecycleSaga) &&
+                method.Name is nameof(BookingLifecycleSaga.Start) or "Handle")
+            .ToArray();
+
+        Assert.Equal(4, runtimeMethods.Length);
+        Assert.All(runtimeMethods, method =>
+        {
+            var messageParameter = method.GetParameters()[0];
+            Assert.NotNull(messageParameter.GetCustomAttributes(typeof(SagaIdentityFromAttribute), false).SingleOrDefault());
+        });
+    }
+
+    /// <summary>
     /// Verifies that the saga baseline accepts the initial booking-created handoff.
     /// </summary>
     [Fact]
-    public async Task BookingLifecycleSagaHandler_Should_Accept_BookingCreatedEvent()
+    public async Task BookingLifecycleSaga_Should_Start_From_BookingCreatedEvent()
     {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var createdAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero);
         var message = new BookingCreatedEvent(
-            Guid.NewGuid(),
-            Guid.NewGuid(),
+            bookingId,
+            eventId,
             "user-1",
             2,
-            new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero));
+            createdAt);
 
-        await BookingLifecycleSagaHandler.HandleBookingCreated(message, CancellationToken.None);
+        var saga = await BookingLifecycleSaga.Start(
+            message,
+            new TestMessageContext(),
+            new FixedTimeProvider(createdAt),
+            Options.Create(new BookingLifecycleOptions()));
+
+        Assert.Equal(bookingId, saga.Id);
+        Assert.Equal(eventId, saga.EventId);
+        Assert.Equal(2, saga.Quantity);
+        Assert.Equal(createdAt, saga.StartedAt);
     }
 
     /// <summary>
     /// Verifies that the durable saga baseline publishes payment processing and schedules the timeout.
     /// </summary>
     [Fact]
-    public async Task BookingLifecycleSagaHandler_Should_PublishPaymentCommand_And_ScheduleTimeout()
+    public async Task BookingLifecycleSaga_Should_Use_Configured_PaymentWindow()
     {
         var bookingId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
@@ -685,10 +720,14 @@ public class BookingLifecycleApiBaselineTests
         var bus = new TestMessageContext();
         var timeProvider = new FixedTimeProvider(createdAt);
 
-        await BookingLifecycleSagaHandler.HandleBookingCreated(
+        await BookingLifecycleSaga.Start(
             new BookingCreatedEvent(bookingId, eventId, "user-1", 2, createdAt),
             bus,
-            timeProvider);
+            timeProvider,
+            Options.Create(new BookingLifecycleOptions
+            {
+                PaymentWindow = TimeSpan.FromMinutes(20)
+            }));
 
         Assert.Contains(bus.Published, x =>
             x is Envelope { Message: ProcessPaymentCommand published } &&
@@ -700,7 +739,9 @@ public class BookingLifecycleApiBaselineTests
         Assert.Contains(bus.ScheduledMessages(), x =>
             x.Message is BookingPaymentTimeoutExpiredEvent scheduled &&
             scheduled.BookingId == bookingId &&
-            scheduled.ExpiredAt == createdAt.AddMinutes(15));
+            scheduled.ExpiredAt == createdAt.AddMinutes(20) &&
+            scheduled.EventId == default &&
+            scheduled.Quantity == 0);
     }
 
     /// <summary>
@@ -728,7 +769,8 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentSucceeded(
+        var saga = CreateSaga(bookingId);
+        var result = await saga.Handle(
             new PaymentSucceededEvent(
                 bookingId,
                 Guid.NewGuid(),
@@ -741,6 +783,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.Contains(bus.Invoked, x =>
             x is Envelope { Message: ConfirmBookingCommand invoked } &&
             invoked.BookingId == bookingId);
+        Assert.True(saga.IsCompleted());
     }
 
     /// <summary>
@@ -769,14 +812,13 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentFailed(
+        var saga = CreateSaga(bookingId, eventId, 3);
+        var result = await saga.Handle(
             new PaymentFailedEvent(
                 bookingId,
                 Guid.NewGuid(),
                 "Declined",
                 new DateTimeOffset(2026, 5, 23, 12, 10, 0, TimeSpan.Zero)),
-            eventId,
-            3,
             db,
             bus,
             CancellationToken.None);
@@ -790,6 +832,7 @@ public class BookingLifecycleApiBaselineTests
             published.BookingId == bookingId &&
             published.EventId == eventId &&
             published.Quantity == 3);
+        Assert.True(saga.IsCompleted());
     }
 
     /// <summary>
@@ -819,12 +862,11 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentTimeoutExpired(
+        var saga = CreateSaga(bookingId, eventId, 2);
+        var result = await saga.Handle(
             new BookingPaymentTimeoutExpiredEvent(
                 bookingId,
-                expiredAt,
-                eventId,
-                2),
+                expiredAt),
             db,
             bus,
             CancellationToken.None);
@@ -838,6 +880,7 @@ public class BookingLifecycleApiBaselineTests
             published.BookingId == bookingId &&
             published.EventId == eventId &&
             published.Quantity == 2);
+        Assert.True(saga.IsCompleted());
     }
 
     /// <summary>
@@ -869,14 +912,13 @@ public class BookingLifecycleApiBaselineTests
                     "Bookings.CancellationFailed",
                     "The booking could not be cancelled.")));
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentFailed(
+        var saga = CreateSaga(bookingId, eventId, 2);
+        var result = await saga.Handle(
             new PaymentFailedEvent(
                 bookingId,
                 Guid.NewGuid(),
                 "Declined",
                 new DateTimeOffset(2026, 5, 23, 12, 10, 0, TimeSpan.Zero)),
-            eventId,
-            2,
             db,
             bus,
             CancellationToken.None);
@@ -886,6 +928,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.DoesNotContain(bus.Published, x =>
             x is Envelope { Message: ReleaseTicketsCommand published } &&
             published.BookingId == bookingId);
+        Assert.False(saga.IsCompleted());
     }
 
     /// <summary>
@@ -917,12 +960,11 @@ public class BookingLifecycleApiBaselineTests
                     "Bookings.ExpirationFailed",
                     "The booking could not be expired.")));
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentTimeoutExpired(
+        var saga = CreateSaga(bookingId, eventId, 2);
+        var result = await saga.Handle(
             new BookingPaymentTimeoutExpiredEvent(
                 bookingId,
-                new DateTimeOffset(2026, 5, 23, 12, 15, 0, TimeSpan.Zero),
-                eventId,
-                2),
+                new DateTimeOffset(2026, 5, 23, 12, 15, 0, TimeSpan.Zero)),
             db,
             bus,
             CancellationToken.None);
@@ -932,6 +974,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.DoesNotContain(bus.Published, x =>
             x is Envelope { Message: ReleaseTicketsCommand published } &&
             published.BookingId == bookingId);
+        Assert.False(saga.IsCompleted());
     }
 
     /// <summary>
@@ -944,7 +987,8 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var bus = new TestMessageContext();
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentSucceeded(
+        var saga = CreateSaga(bookingId);
+        var result = await saga.Handle(
             new PaymentSucceededEvent(
                 bookingId,
                 Guid.NewGuid(),
@@ -985,7 +1029,8 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentSucceeded(
+        var saga = CreateSaga(bookingId);
+        var result = await saga.Handle(
             new PaymentSucceededEvent(
                 bookingId,
                 Guid.NewGuid(),
@@ -998,6 +1043,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.DoesNotContain(bus.Invoked, x =>
             x is Envelope { Message: ConfirmBookingCommand invoked } &&
             invoked.BookingId == bookingId);
+        Assert.True(saga.IsCompleted());
     }
 
     /// <summary>
@@ -1026,14 +1072,13 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentFailed(
+        var saga = CreateSaga(bookingId, eventId, 2);
+        var result = await saga.Handle(
             new PaymentFailedEvent(
                 bookingId,
                 Guid.NewGuid(),
                 "Declined",
                 new DateTimeOffset(2026, 5, 23, 12, 25, 0, TimeSpan.Zero)),
-            eventId,
-            2,
             db,
             bus,
             CancellationToken.None);
@@ -1045,6 +1090,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.DoesNotContain(bus.Published, x =>
             x is Envelope { Message: ReleaseTicketsCommand published } &&
             published.BookingId == bookingId);
+        Assert.True(saga.IsCompleted());
     }
 
     /// <summary>
@@ -1073,12 +1119,11 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.HandlePaymentTimeoutExpired(
+        var saga = CreateSaga(bookingId, eventId, 2);
+        var result = await saga.Handle(
             new BookingPaymentTimeoutExpiredEvent(
                 bookingId,
-                new DateTimeOffset(2026, 5, 23, 12, 30, 0, TimeSpan.Zero),
-                eventId,
-                2),
+                new DateTimeOffset(2026, 5, 23, 12, 30, 0, TimeSpan.Zero)),
             db,
             bus,
             CancellationToken.None);
@@ -1090,6 +1135,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.DoesNotContain(bus.Published, x =>
             x is Envelope { Message: ReleaseTicketsCommand published } &&
             published.BookingId == bookingId);
+        Assert.True(saga.IsCompleted());
     }
 
     /// <summary>
@@ -1127,6 +1173,18 @@ public class BookingLifecycleApiBaselineTests
 
         return new AppDbContext(options);
     }
+
+    private static BookingLifecycleSaga CreateSaga(
+        Guid bookingId,
+        Guid eventId = default,
+        int quantity = 0) =>
+        new()
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = quantity,
+            StartedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        };
 
     private static CreateBookingHandler CreateHandler(
         AppDbContext db,

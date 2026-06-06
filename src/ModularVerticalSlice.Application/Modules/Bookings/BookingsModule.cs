@@ -21,6 +21,8 @@ public sealed class BookingsModule : IModule
     /// <inheritdoc />
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
+        services.Configure<BookingLifecycleOptions>(
+            configuration.GetSection("Bookings:Lifecycle"));
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<CreateBookingHandler>();
         services.AddScoped<BookingLifecycleHandler>();
