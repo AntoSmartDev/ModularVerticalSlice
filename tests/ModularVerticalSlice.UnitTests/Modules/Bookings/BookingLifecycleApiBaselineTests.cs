@@ -47,7 +47,7 @@ public class BookingLifecycleApiBaselineTests
         var bus = CreateMessageBus(command, Result.Success());
         var handler = CreateHandler(db, bus, userContext);
 
-        var result = await handler.Handle(command, CancellationToken.None);
+        var result = await handler.HandleCreateBooking(command, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Single(db.ChangeTracker.Entries<Booking>());
@@ -101,7 +101,7 @@ public class BookingLifecycleApiBaselineTests
             Result.Success());
         var handler = CreateHandler(db, bus, new FakeCurrentUserContext("user-1"));
 
-        var result = await handler.Handle(
+        var result = await handler.HandleCreateBooking(
             new CreateBookingCommand(eventId, 3, clientRequestId),
             CancellationToken.None);
 
@@ -139,7 +139,7 @@ public class BookingLifecycleApiBaselineTests
                     "Not enough tickets are available.")));
         var handler = CreateHandler(db, bus, new FakeCurrentUserContext("user-1"));
 
-        var result = await handler.Handle(
+        var result = await handler.HandleCreateBooking(
             command,
             CancellationToken.None);
 
@@ -247,7 +247,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.Handle(new ConfirmBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(BookingStatus.Confirmed, db.Bookings.Single(x => x.Id == bookingId).Status);
@@ -276,7 +276,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.Handle(new CancelBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleCancelBooking(new CancelBookingCommand(bookingId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(BookingStatus.Cancelled, db.Bookings.Single(x => x.Id == bookingId).Status);
@@ -305,7 +305,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.Handle(new ExpireBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleExpireBooking(new ExpireBookingCommand(bookingId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(BookingStatus.Expired, db.Bookings.Single(x => x.Id == bookingId).Status);
@@ -320,7 +320,7 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.Handle(new ConfirmBookingCommand(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(Guid.NewGuid()), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -350,7 +350,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.Handle(new ConfirmBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
@@ -634,7 +634,7 @@ public class BookingLifecycleApiBaselineTests
             2,
             new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero));
 
-        await BookingLifecycleSagaHandler.Handle(message, CancellationToken.None);
+        await BookingLifecycleSagaHandler.HandleBookingCreated(message, CancellationToken.None);
     }
 
     /// <summary>
@@ -649,7 +649,7 @@ public class BookingLifecycleApiBaselineTests
         var bus = new TestMessageContext();
         var timeProvider = new FixedTimeProvider(createdAt);
 
-        await BookingLifecycleSagaHandler.Handle(
+        await BookingLifecycleSagaHandler.HandleBookingCreated(
             new BookingCreatedEvent(bookingId, eventId, "user-1", 2, createdAt),
             bus,
             timeProvider);
@@ -692,7 +692,7 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.Handle(
+        var result = await BookingLifecycleSagaHandler.HandlePaymentSucceeded(
             new PaymentSucceededEvent(
                 bookingId,
                 Guid.NewGuid(),
@@ -733,7 +733,7 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.Handle(
+        var result = await BookingLifecycleSagaHandler.HandlePaymentFailed(
             new PaymentFailedEvent(
                 bookingId,
                 Guid.NewGuid(),
@@ -783,7 +783,7 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.Handle(
+        var result = await BookingLifecycleSagaHandler.HandlePaymentTimeoutExpired(
             new BookingPaymentTimeoutExpiredEvent(
                 bookingId,
                 expiredAt,
@@ -829,7 +829,7 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.Handle(
+        var result = await BookingLifecycleSagaHandler.HandlePaymentSucceeded(
             new PaymentSucceededEvent(
                 bookingId,
                 Guid.NewGuid(),
@@ -870,7 +870,7 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.Handle(
+        var result = await BookingLifecycleSagaHandler.HandlePaymentFailed(
             new PaymentFailedEvent(
                 bookingId,
                 Guid.NewGuid(),
@@ -917,7 +917,7 @@ public class BookingLifecycleApiBaselineTests
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
 
-        var result = await BookingLifecycleSagaHandler.Handle(
+        var result = await BookingLifecycleSagaHandler.HandlePaymentTimeoutExpired(
             new BookingPaymentTimeoutExpiredEvent(
                 bookingId,
                 new DateTimeOffset(2026, 5, 23, 12, 30, 0, TimeSpan.Zero),

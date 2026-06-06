@@ -10,6 +10,7 @@ using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 
@@ -84,7 +85,8 @@ public sealed class CreateBookingHandler(
     /// <summary>
     /// Creates a new pending booking and coordinates the initial ticket reservation.
     /// </summary>
-    public async Task<Result<Guid>> Handle(
+    [WolverineHandler]
+    public async Task<Result<Guid>> HandleCreateBooking(
         CreateBookingCommand command,
         CancellationToken cancellationToken)
     {
@@ -152,10 +154,11 @@ public sealed class CreateBookingHandler(
     /// <summary>
     /// Handles the transitional request-booking alias.
     /// </summary>
-    public Task<Result<Guid>> Handle(
+    [WolverineHandler]
+    public Task<Result<Guid>> HandleRequestBooking(
         RequestBookingCommand command,
         CancellationToken cancellationToken) =>
-        Handle((CreateBookingCommand)command, cancellationToken);
+        HandleCreateBooking((CreateBookingCommand)command, cancellationToken);
 }
 
 /// <summary>
@@ -186,7 +189,7 @@ public static class CreateBookingEndpoint
         CreateBookingHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(command, cancellationToken);
+        var result = await handler.HandleCreateBooking(command, cancellationToken);
         return result.ToHttpResponse();
     }
 }

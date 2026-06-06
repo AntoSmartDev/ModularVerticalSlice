@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
@@ -12,28 +13,31 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     /// <summary>
     /// Confirms an existing pending booking.
     /// </summary>
-    public Task<Result> Handle(
+    [WolverineHandler]
+    public Task<Result> HandleConfirmBooking(
         ConfirmBookingCommand command,
         CancellationToken cancellationToken) =>
-        Handle(command.BookingId, cancellationToken, booking => booking.Confirm());
+        ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Confirm());
 
     /// <summary>
     /// Cancels an existing pending booking.
     /// </summary>
-    public Task<Result> Handle(
+    [WolverineHandler]
+    public Task<Result> HandleCancelBooking(
         CancelBookingCommand command,
         CancellationToken cancellationToken) =>
-        Handle(command.BookingId, cancellationToken, booking => booking.Cancel());
+        ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Cancel());
 
     /// <summary>
     /// Expires an existing pending booking.
     /// </summary>
-    public Task<Result> Handle(
+    [WolverineHandler]
+    public Task<Result> HandleExpireBooking(
         ExpireBookingCommand command,
         CancellationToken cancellationToken) =>
-        Handle(command.BookingId, cancellationToken, booking => booking.Expire());
+        ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Expire());
 
-    private async Task<Result> Handle(
+    private async Task<Result> ApplyTransitionAsync(
         Guid bookingId,
         CancellationToken cancellationToken,
         Func<Persistence.Entities.Booking, Result> transition)
