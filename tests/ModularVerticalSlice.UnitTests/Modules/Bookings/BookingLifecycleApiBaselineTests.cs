@@ -805,6 +805,126 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
+    /// Verifies that ticket release is not published when booking cancellation fails.
+    /// </summary>
+    [Fact]
+    public async Task PaymentFailedEvent_Should_Not_Release_Tickets_When_Cancellation_Fails()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Failure(
+                Error.Conflict(
+                    "Bookings.CancellationFailed",
+                    "The booking could not be cancelled.")));
+
+        var result = await BookingLifecycleSagaHandler.HandlePaymentFailed(
+            new PaymentFailedEvent(
+                bookingId,
+                Guid.NewGuid(),
+                "Declined",
+                new DateTimeOffset(2026, 5, 23, 12, 10, 0, TimeSpan.Zero)),
+            eventId,
+            2,
+            db,
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Bookings.CancellationFailed", result.Error.Code);
+        Assert.DoesNotContain(bus.Published, x =>
+            x is Envelope { Message: ReleaseTicketsCommand published } &&
+            published.BookingId == bookingId);
+    }
+
+    /// <summary>
+    /// Verifies that ticket release is not published when booking expiration fails.
+    /// </summary>
+    [Fact]
+    public async Task BookingPaymentTimeoutExpiredEvent_Should_Not_Release_Tickets_When_Expiration_Fails()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
+        });
+        await db.SaveChangesAsync();
+
+        bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
+            .RespondWith(Result.Failure(
+                Error.Conflict(
+                    "Bookings.ExpirationFailed",
+                    "The booking could not be expired.")));
+
+        var result = await BookingLifecycleSagaHandler.HandlePaymentTimeoutExpired(
+            new BookingPaymentTimeoutExpiredEvent(
+                bookingId,
+                new DateTimeOffset(2026, 5, 23, 12, 15, 0, TimeSpan.Zero),
+                eventId,
+                2),
+            db,
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Bookings.ExpirationFailed", result.Error.Code);
+        Assert.DoesNotContain(bus.Published, x =>
+            x is Envelope { Message: ReleaseTicketsCommand published } &&
+            published.BookingId == bookingId);
+    }
+
+    /// <summary>
+    /// Verifies that the saga reports a missing booking without invoking a lifecycle transition.
+    /// </summary>
+    [Fact]
+    public async Task PaymentSucceededEvent_Should_Return_NotFound_When_Booking_Is_Missing()
+    {
+        var bookingId = Guid.NewGuid();
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+
+        var result = await BookingLifecycleSagaHandler.HandlePaymentSucceeded(
+            new PaymentSucceededEvent(
+                bookingId,
+                Guid.NewGuid(),
+                new DateTimeOffset(2026, 5, 23, 12, 5, 0, TimeSpan.Zero)),
+            db,
+            bus,
+            CancellationToken.None);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.NotFound, result.Error.Type);
+        Assert.Equal("Bookings.BookingNotFound", result.Error.Code);
+        Assert.Empty(bus.Invoked);
+        Assert.Empty(bus.Published);
+    }
+
+    /// <summary>
     /// Verifies the current baseline late-message behavior before saga state guards are introduced.
     /// </summary>
     [Fact]
