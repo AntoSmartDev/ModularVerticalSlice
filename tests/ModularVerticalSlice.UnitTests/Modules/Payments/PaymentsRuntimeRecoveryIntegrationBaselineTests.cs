@@ -40,7 +40,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 0, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
-            handler.Handle(
+            handler.HandleProcessPayment(
                 new ProcessPaymentCommand(
                     Guid.NewGuid(),
                     eventId,
@@ -86,7 +86,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 5, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
-            handler.Handle(
+            handler.HandleProcessPayment(
                 new ProcessPaymentCommand(
                     Guid.NewGuid(),
                     eventId,
@@ -130,7 +130,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             bus,
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 10, 0, TimeSpan.Zero)));
 
-        var result = await handler.Handle(
+        var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
                 Guid.NewGuid(),
                 eventId,
@@ -170,7 +170,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 15, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
-            handler.Handle(
+            handler.HandleProcessPayment(
                 new ProcessPaymentCommand(
                     Guid.NewGuid(),
                     eventId,
@@ -234,7 +234,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 20, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
-            handler.Handle(
+            handler.HandleProcessPayment(
                 new ProcessPaymentCommand(
                     Guid.NewGuid(),
                     eventId,

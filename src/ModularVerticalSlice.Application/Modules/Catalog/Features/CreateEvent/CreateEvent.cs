@@ -6,6 +6,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent;
 
@@ -62,7 +63,8 @@ public sealed class CreateEventHandler(ICatalogWriteDbContext writeDb)
     /// <summary>
     /// Creates a new catalog event in the write-side persistence boundary.
     /// </summary>
-    public Task<Result<EventReadModel>> Handle(
+    [WolverineHandler]
+    public Task<Result<EventReadModel>> HandleCreateEvent(
         CreateEventCommand command,
         CancellationToken cancellationToken)
     {
@@ -116,7 +118,7 @@ public static class CreateEventEndpoint
         CreateEventHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(command, cancellationToken);
+        var result = await handler.HandleCreateEvent(command, cancellationToken);
         return result.ToHttpResponse();
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
 
@@ -13,7 +14,8 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
     /// <summary>
     /// Reserves tickets for an existing catalog event.
     /// </summary>
-    public async Task<Result> Handle(
+    [WolverineHandler]
+    public async Task<Result> HandleReserveTickets(
         ReserveTicketsCommand command,
         CancellationToken cancellationToken)
     {

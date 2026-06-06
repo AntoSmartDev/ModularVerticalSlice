@@ -35,7 +35,7 @@ public class CatalogEventsApiBaselineTests
         await using var db = CreateDbContext();
         var handler = CreateCreateEventHandler(db);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleCreateEvent(
             new CreateEventCommand("OpenAI Conf", new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero), 49.90m, 120),
             CancellationToken.None);
 
@@ -76,7 +76,7 @@ public class CatalogEventsApiBaselineTests
 
         var handler = CreateGetUpcomingEventsHandler(db, new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
 
-        var result = await handler.Handle(new GetUpcomingEventsQuery(), CancellationToken.None);
+        var result = await handler.HandleGetUpcomingEvents(new GetUpcomingEventsQuery(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         var events = Assert.Single(result.Value);
@@ -92,7 +92,7 @@ public class CatalogEventsApiBaselineTests
         await using var db = CreateDbContext();
         var handler = CreateGetEventDetailsHandler(db);
 
-        var result = await handler.Handle(new GetEventDetailsQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.HandleGetEventDetails(new GetEventDetailsQuery(Guid.NewGuid()), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -120,7 +120,7 @@ public class CatalogEventsApiBaselineTests
 
         var handler = CreateReserveTicketsHandler(db);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleReserveTickets(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
             CancellationToken.None);
 
@@ -149,7 +149,7 @@ public class CatalogEventsApiBaselineTests
 
         var handler = CreateReserveTicketsHandler(db);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleReserveTickets(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
             CancellationToken.None);
 
@@ -180,7 +180,7 @@ public class CatalogEventsApiBaselineTests
 
         var handler = CreateReleaseTicketsHandler(db);
 
-        var result = await handler.Handle(
+        var result = await handler.HandleReleaseTickets(
             new ReleaseTicketsCommand(eventId, 2, Guid.NewGuid()),
             CancellationToken.None);
 

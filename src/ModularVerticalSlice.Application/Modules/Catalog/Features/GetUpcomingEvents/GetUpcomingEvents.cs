@@ -6,6 +6,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents;
 
@@ -24,7 +25,8 @@ public sealed class GetUpcomingEventsHandler(
     /// <summary>
     /// Returns the list of upcoming catalog events.
     /// </summary>
-    public async Task<Result<IReadOnlyList<EventReadModel>>> Handle(
+    [WolverineHandler]
+    public async Task<Result<IReadOnlyList<EventReadModel>>> HandleGetUpcomingEvents(
         GetUpcomingEventsQuery query,
         CancellationToken cancellationToken)
     {
@@ -66,7 +68,7 @@ public static class GetUpcomingEventsEndpoint
         GetUpcomingEventsHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(new GetUpcomingEventsQuery(), cancellationToken);
+        var result = await handler.HandleGetUpcomingEvents(new GetUpcomingEventsQuery(), cancellationToken);
         return result.ToHttpResponse();
     }
 }

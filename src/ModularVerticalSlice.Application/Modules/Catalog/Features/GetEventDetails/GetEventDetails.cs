@@ -6,6 +6,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails;
 
@@ -23,7 +24,8 @@ public sealed class GetEventDetailsHandler(ICatalogReadDbContext readDb)
     /// <summary>
     /// Returns the details of a single catalog event.
     /// </summary>
-    public async Task<Result<EventReadModel>> Handle(
+    [WolverineHandler]
+    public async Task<Result<EventReadModel>> HandleGetEventDetails(
         GetEventDetailsQuery query,
         CancellationToken cancellationToken)
     {
@@ -71,7 +73,7 @@ public static class GetEventDetailsEndpoint
         GetEventDetailsHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(new GetEventDetailsQuery(id), cancellationToken);
+        var result = await handler.HandleGetEventDetails(new GetEventDetailsQuery(id), cancellationToken);
         return result.ToHttpResponse();
     }
 }

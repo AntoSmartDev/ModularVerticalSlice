@@ -7,6 +7,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
 
@@ -42,7 +43,8 @@ public sealed class GetBookingDetailsHandler(
     /// <summary>
     /// Returns details for a specific booking owned by the current authenticated user.
     /// </summary>
-    public async Task<Result<BookingDetailsReadModel>> Handle(
+    [WolverineHandler]
+    public async Task<Result<BookingDetailsReadModel>> HandleGetBookingDetails(
         GetBookingDetailsQuery query,
         CancellationToken cancellationToken)
     {
@@ -115,7 +117,7 @@ public static class GetBookingDetailsEndpoint
         GetBookingDetailsHandler handler,
         CancellationToken cancellationToken)
     {
-        var result = await handler.Handle(new GetBookingDetailsQuery(id), cancellationToken);
+        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(id), cancellationToken);
         return result.ToHttpResponse();
     }
 }

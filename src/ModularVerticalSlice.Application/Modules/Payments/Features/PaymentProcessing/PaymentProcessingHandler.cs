@@ -5,6 +5,7 @@ using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine;
+using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 
@@ -28,7 +29,8 @@ public sealed class PaymentProcessingHandler(
     /// <summary>
     /// Handles the baseline ProcessPayment command.
     /// </summary>
-    public async Task<Result> Handle(
+    [WolverineHandler]
+    public async Task<Result> HandleProcessPayment(
         ProcessPaymentCommand command,
         CancellationToken cancellationToken)
     {

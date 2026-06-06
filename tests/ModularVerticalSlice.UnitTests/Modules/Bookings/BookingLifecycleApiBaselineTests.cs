@@ -422,7 +422,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(currentUserId));
 
-        var result = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var result = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value.Count);
@@ -467,7 +467,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(currentUserId));
 
-        var initial = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var initial = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
         Assert.True(initial.IsSuccess);
         Assert.Single(initial.Value);
         Assert.Equal("Initial title", initial.Value[0].EventTitle);
@@ -477,7 +477,7 @@ public class BookingLifecycleApiBaselineTests
         @event.Date = new DateTimeOffset(2026, 6, 4, 21, 0, 0, TimeSpan.Zero);
         await db.SaveChangesAsync();
 
-        var updated = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var updated = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
 
         Assert.True(updated.IsSuccess);
         Assert.Single(updated.Value);
@@ -494,7 +494,7 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(string.Empty));
 
-        var result = await handler.Handle(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var result = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Unauthorized, result.Error.Type);
@@ -534,7 +534,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext("user-1"));
 
-        var result = await handler.Handle(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
+        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(bookingId, result.Value.Id);
@@ -570,7 +570,7 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext("user-1"));
 
-        var result = await handler.Handle(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
+        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -586,7 +586,7 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext(string.Empty));
 
-        var result = await handler.Handle(new GetBookingDetailsQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(Guid.NewGuid()), CancellationToken.None);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Unauthorized, result.Error.Type);

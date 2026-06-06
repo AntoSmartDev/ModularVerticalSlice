@@ -262,7 +262,7 @@ public class PaymentProcessingBaselineTests
             bus,
             new FixedTimeProvider(processedAt));
 
-        var result = await handler.Handle(
+        var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
                 bookingId,
                 eventId,
@@ -316,7 +316,7 @@ public class PaymentProcessingBaselineTests
             bus,
             new FixedTimeProvider(processedAt));
 
-        var result = await handler.Handle(
+        var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
                 bookingId,
                 eventId,
@@ -369,7 +369,7 @@ public class PaymentProcessingBaselineTests
         await db.SaveChangesAsync();
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
-            handler.Handle(
+            handler.HandleProcessPayment(
                 new ProcessPaymentCommand(
                     bookingId,
                     eventId,
@@ -413,7 +413,7 @@ public class PaymentProcessingBaselineTests
         await db.SaveChangesAsync();
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
-            handler.Handle(
+            handler.HandleProcessPayment(
                 new ProcessPaymentCommand(
                     bookingId,
                     eventId,
@@ -456,7 +456,7 @@ public class PaymentProcessingBaselineTests
             businessBus,
             new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 0, 0, TimeSpan.Zero)));
 
-        var businessResult = await businessHandler.Handle(
+        var businessResult = await businessHandler.HandleProcessPayment(
             new ProcessPaymentCommand(
                 Guid.NewGuid(),
                 eventId,
@@ -488,7 +488,7 @@ public class PaymentProcessingBaselineTests
             new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 5, 0, TimeSpan.Zero)));
 
         await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
-            technicalHandler.Handle(
+            technicalHandler.HandleProcessPayment(
                 new ProcessPaymentCommand(
                     Guid.NewGuid(),
                     eventId,
@@ -515,7 +515,7 @@ public class PaymentProcessingBaselineTests
             bus,
             new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 22, 10, 0, TimeSpan.Zero)));
 
-        var result = await handler.Handle(
+        var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
                 Guid.NewGuid(),
                 Guid.NewGuid(),
