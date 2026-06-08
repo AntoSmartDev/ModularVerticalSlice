@@ -19,7 +19,6 @@ namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProc
 /// failures are surfaced as a dedicated exception so Wolverine can own retry
 /// semantics without conflating them with business outcomes.
 /// </remarks>
-[Transactional]
 public sealed class PaymentProcessingHandler(
     IPaymentWriteDbContext writeDb,
     ICatalogReadDbContext catalogReadDb,

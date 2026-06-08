@@ -9,7 +9,6 @@ namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTicke
 /// <summary>
 /// Handles ticket reservation for a specific catalog event.
 /// </summary>
-[Transactional]
 public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
 {
     private readonly ICatalogWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));

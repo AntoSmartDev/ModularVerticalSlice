@@ -9,7 +9,6 @@ namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTicke
 /// <summary>
 /// Handles ticket release for a specific catalog event.
 /// </summary>
-[Transactional]
 public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
 {
     private readonly ICatalogWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));

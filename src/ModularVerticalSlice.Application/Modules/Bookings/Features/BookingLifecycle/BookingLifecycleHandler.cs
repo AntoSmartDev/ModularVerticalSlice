@@ -8,7 +8,6 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 /// <summary>
 /// Handles the Bookings lifecycle state-transition commands.
 /// </summary>
-[Transactional]
 public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
 {
     private readonly IBookingWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));

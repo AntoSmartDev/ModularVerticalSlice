@@ -4,7 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ModularVerticalSlice.Application.Modules.Bookings;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Payments;
@@ -292,5 +294,121 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
         command.Parameters.Add(parameter);
 
         await command.ExecuteNonQueryAsync();
+    }
+}
+
+/// <summary>
+/// Verifies that mini DbContext adapters wrap the same scoped AppDbContext instance.
+/// If adapters held a separate instance, handler changes would not be committed by
+/// Wolverine's transaction middleware, and bookings would remain in Pending state.
+/// </summary>
+public sealed class PersistenceRegistrationScopeTests
+{
+    [Fact]
+    public void MiniDbContextAdapters_Wrap_Same_Scoped_AppDbContext_Instance()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
+
+        IModule[] modules = [new BookingsModule(), new PaymentsModule()];
+        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        builder.Services.AddPersistence();
+        builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
+
+        var host = builder.Build();
+
+        using var scope = host.Services.CreateScope();
+        var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var writeDb = scope.ServiceProvider.GetRequiredService<IBookingWriteDbContext>();
+
+        // EF Core caches DbSet<T> per context instance, so same DbSet reference = same AppDbContext instance.
+        // If adapters wrapped a separate AppDbContext, writeDb.Bookings would be a different object.
+        Assert.Same(appDb.Bookings, writeDb.Bookings);
+    }
+}
+
+/// <summary>
+/// Verifies that ConfirmBookingCommand commits the booking status without [Transactional],
+/// relying solely on AutoApplyTransactions() and the adapter chain.
+/// </summary>
+public sealed class BookingLifecycleHandlerDirectCommitTests
+{
+    [Fact]
+    public async Task ConfirmBookingCommand_Commits_Status_Without_Transactional_Attribute()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+
+        using var host = await StartHostAsync();
+
+        try
+        {
+            await SeedPendingBookingAsync(host, bookingId, eventId);
+
+            var session = await host.InvokeMessageAndWaitAsync(
+                new ConfirmBookingCommand(bookingId));
+
+            Assert.Empty(session.AllExceptions());
+
+            var status = await ReadBookingStatusAsync(host, bookingId);
+            Assert.Equal(BookingStatus.Confirmed, status);
+        }
+        finally
+        {
+            await DeleteBookingAsync(host, bookingId);
+        }
+    }
+
+    private static async Task<IHost> StartHostAsync()
+    {
+        var builder = Host.CreateApplicationBuilder();
+        builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
+
+        IModule[] modules = [new BookingsModule(), new PaymentsModule()];
+        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        builder.Services.AddPersistence();
+        builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
+
+        var host = builder.Build();
+        await host.StartAsync();
+
+        await using var scope = host.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
+
+        return host;
+    }
+
+    private static async Task SeedPendingBookingAsync(IHost host, Guid bookingId, Guid eventId)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 1,
+            Status = BookingStatus.Pending,
+            UserId = "direct-test-user",
+            ClientRequestId = Guid.NewGuid(),
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task<BookingStatus?> ReadBookingStatusAsync(IHost host, Guid bookingId)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        return await db.Bookings
+            .Where(b => b.Id == bookingId)
+            .Select(b => (BookingStatus?)b.Status)
+            .SingleOrDefaultAsync();
+    }
+
+    private static async Task DeleteBookingAsync(IHost host, Guid bookingId)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await db.Bookings.Where(b => b.Id == bookingId).ExecuteDeleteAsync();
     }
 }
