@@ -253,7 +253,7 @@ public class PaymentProcessingBaselineTests
             TicketPrice = 49.90m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
             db,
@@ -268,7 +268,7 @@ public class PaymentProcessingBaselineTests
                 eventId,
                 "user-1",
                 2),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Single(db.ChangeTracker.Entries<Payment>());
@@ -307,7 +307,7 @@ public class PaymentProcessingBaselineTests
             TicketPrice = 20m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
             db,
@@ -322,7 +322,7 @@ public class PaymentProcessingBaselineTests
                 eventId,
                 "declined-user",
                 3),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Single(db.ChangeTracker.Entries<Payment>());
@@ -366,7 +366,7 @@ public class PaymentProcessingBaselineTests
             TicketPrice = 30m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             handler.HandleProcessPayment(
@@ -375,7 +375,7 @@ public class PaymentProcessingBaselineTests
                     eventId,
                     "technical-failure-user",
                     1),
-                CancellationToken.None));
+                TestContext.Current.CancellationToken));
 
         Assert.Equal("Payment provider is temporarily unavailable.", exception.Message);
         Assert.True(exception.IsRetriable);
@@ -410,7 +410,7 @@ public class PaymentProcessingBaselineTests
             TicketPrice = 30m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             handler.HandleProcessPayment(
@@ -419,7 +419,7 @@ public class PaymentProcessingBaselineTests
                     eventId,
                     "technical-terminal-user",
                     1),
-                CancellationToken.None));
+                TestContext.Current.CancellationToken));
 
         Assert.Equal("Payment provider rejected the request as non-retriable.", exception.Message);
         Assert.False(exception.IsRetriable);
@@ -446,7 +446,7 @@ public class PaymentProcessingBaselineTests
             TicketPrice = 25m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var businessBus = new TestMessageContext();
         var businessHandler = new PaymentProcessingHandler(
@@ -462,7 +462,7 @@ public class PaymentProcessingBaselineTests
                 eventId,
                 "declined-user",
                 1),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(businessResult.IsSuccess);
         Assert.Contains(businessBus.Published, x => x is Envelope { Message: PaymentFailedEvent });
@@ -477,7 +477,7 @@ public class PaymentProcessingBaselineTests
             TicketPrice = 25m,
             AvailableTickets = 10
         });
-        await technicalDb.SaveChangesAsync();
+        await technicalDb.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var technicalBus = new TestMessageContext();
         var technicalHandler = new PaymentProcessingHandler(
@@ -494,7 +494,7 @@ public class PaymentProcessingBaselineTests
                     eventId,
                     "technical-failure-user",
                     1),
-                CancellationToken.None));
+                TestContext.Current.CancellationToken));
 
         Assert.Empty(technicalBus.Published);
         Assert.Empty(technicalDb.ChangeTracker.Entries<Payment>());
@@ -521,7 +521,7 @@ public class PaymentProcessingBaselineTests
                 Guid.NewGuid(),
                 "user-1",
                 1),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Catalog.EventNotFound", result.Error.Code);

@@ -1,8 +1,13 @@
-using ModularVerticalSlice.Application.Modules.Bookings;
+﻿using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments;
+using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 using ModularVerticalSlice.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Wolverine;
+using Wolverine.EntityFrameworkCore;
 using Wolverine.Postgresql;
 using Wolverine.RDBMS;
 
@@ -24,6 +29,9 @@ public static class ApplicationMessagingExtensions
     {
         var connectionString = configuration.GetRequiredDatabaseConnectionString();
 
+        options.Services.AddDbContextWithWolverineIntegration<AppDbContext>(builder =>
+            builder.UseNpgsql(connectionString));
+        options.UseRuntimeCompilation();
         options.Discovery.IncludeAssembly(typeof(BookingsModule).Assembly);
         options.Policies.AutoApplyTransactions();
         options.AddSagaType<BookingLifecycleSaga>("booking_lifecycle_sagas");

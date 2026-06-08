@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -43,13 +43,13 @@ public class BookingLifecycleApiBaselineTests
             TicketPrice = 49.90m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var command = new CreateBookingCommand(eventId, 2, Guid.NewGuid());
         var bus = CreateMessageBus(command, Result.Success());
         var handler = CreateHandler(db, bus, userContext);
 
-        var result = await handler.HandleCreateBooking(command, CancellationToken.None);
+        var result = await handler.HandleCreateBooking(command, TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Single(db.ChangeTracker.Entries<Booking>());
@@ -96,7 +96,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = clientRequestId,
             CreatedAt = new DateTimeOffset(2026, 5, 23, 10, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var bus = CreateMessageBus(
             new CreateBookingCommand(eventId, 3, clientRequestId),
@@ -105,7 +105,7 @@ public class BookingLifecycleApiBaselineTests
 
         var result = await handler.HandleCreateBooking(
             new CreateBookingCommand(eventId, 3, clientRequestId),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(bookingId, result.Value);
@@ -130,7 +130,7 @@ public class BookingLifecycleApiBaselineTests
             TicketPrice = 20m,
             AvailableTickets = 1
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var command = new CreateBookingCommand(eventId, 2, Guid.NewGuid());
         var bus = CreateMessageBus(
@@ -143,7 +143,7 @@ public class BookingLifecycleApiBaselineTests
 
         var result = await handler.HandleCreateBooking(
             command,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
@@ -245,11 +245,11 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(BookingStatus.Confirmed, db.Bookings.Single(x => x.Id == bookingId).Status);
@@ -274,11 +274,11 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleCancelBooking(new CancelBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleCancelBooking(new CancelBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(BookingStatus.Cancelled, db.Bookings.Single(x => x.Id == bookingId).Status);
@@ -303,11 +303,11 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleExpireBooking(new ExpireBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleExpireBooking(new ExpireBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(BookingStatus.Expired, db.Bookings.Single(x => x.Id == bookingId).Status);
@@ -322,7 +322,7 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -348,11 +348,11 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), CancellationToken.None);
+        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
@@ -420,11 +420,11 @@ public class BookingLifecycleApiBaselineTests
                 ClientRequestId = Guid.NewGuid(),
                 CreatedAt = new DateTimeOffset(2026, 5, 23, 13, 0, 0, TimeSpan.Zero)
             });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(currentUserId));
 
-        var result = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var result = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(2, result.Value.Count);
@@ -465,21 +465,21 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 11, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(currentUserId));
 
-        var initial = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var initial = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), TestContext.Current.CancellationToken);
         Assert.True(initial.IsSuccess);
         Assert.Single(initial.Value);
         Assert.Equal("Initial title", initial.Value[0].EventTitle);
 
-        var @event = await db.Events.SingleAsync(x => x.Id == eventId);
+        var @event = await db.Events.SingleAsync(x => x.Id == eventId, TestContext.Current.CancellationToken);
         @event.Title = "Renamed title";
         @event.Date = new DateTimeOffset(2026, 6, 4, 21, 0, 0, TimeSpan.Zero);
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var updated = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var updated = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), TestContext.Current.CancellationToken);
 
         Assert.True(updated.IsSuccess);
         Assert.Single(updated.Value);
@@ -496,7 +496,7 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var handler = new GetCustomerBookingsHandler(db, new FakeCurrentUserContext(string.Empty));
 
-        var result = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), CancellationToken.None);
+        var result = await handler.HandleGetCustomerBookings(new GetCustomerBookingsQuery(), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Unauthorized, result.Error.Type);
@@ -532,11 +532,11 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext("user-1"));
 
-        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
+        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(bookingId, result.Value.Id);
@@ -568,11 +568,11 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext("user-1"));
 
-        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(bookingId), CancellationToken.None);
+        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -588,7 +588,7 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var handler = new GetBookingDetailsHandler(db, new FakeCurrentUserContext(string.Empty));
 
-        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Unauthorized, result.Error.Type);
@@ -764,7 +764,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -777,7 +777,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 5, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Contains(bus.Invoked, x =>
@@ -807,7 +807,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -821,7 +821,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 10, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Contains(bus.Invoked, x =>
@@ -857,7 +857,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -869,7 +869,7 @@ public class BookingLifecycleApiBaselineTests
                 expiredAt),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Contains(bus.Invoked, x =>
@@ -904,7 +904,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Failure(
@@ -921,7 +921,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 10, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Bookings.CancellationFailed", result.Error.Code);
@@ -952,7 +952,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Failure(
@@ -967,7 +967,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 15, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Bookings.ExpirationFailed", result.Error.Code);
@@ -995,7 +995,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 5, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -1024,7 +1024,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<ConfirmBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -1037,7 +1037,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 20, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.DoesNotContain(bus.Invoked, x =>
@@ -1067,7 +1067,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<CancelBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -1081,7 +1081,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 25, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.DoesNotContain(bus.Invoked, x =>
@@ -1114,7 +1114,7 @@ public class BookingLifecycleApiBaselineTests
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         bus.WhenInvokedMessageOf<ExpireBookingCommand>(x => x.BookingId == bookingId)
             .RespondWith(Result.Success());
@@ -1126,7 +1126,7 @@ public class BookingLifecycleApiBaselineTests
                 new DateTimeOffset(2026, 5, 23, 12, 30, 0, TimeSpan.Zero)),
             db,
             bus,
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.DoesNotContain(bus.Invoked, x =>

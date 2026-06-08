@@ -37,7 +37,7 @@ public class CatalogEventsApiBaselineTests
 
         var result = await handler.HandleCreateEvent(
             new CreateEventCommand("OpenAI Conf", new DateTimeOffset(2026, 6, 10, 10, 0, 0, TimeSpan.Zero), 49.90m, 120),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Single(db.ChangeTracker.Entries<Event>());
@@ -72,11 +72,11 @@ public class CatalogEventsApiBaselineTests
                 TicketPrice = 15,
                 AvailableTickets = 20
             });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = CreateGetUpcomingEventsHandler(db, new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
 
-        var result = await handler.HandleGetUpcomingEvents(new GetUpcomingEventsQuery(), CancellationToken.None);
+        var result = await handler.HandleGetUpcomingEvents(new GetUpcomingEventsQuery(), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         var events = Assert.Single(result.Value);
@@ -92,7 +92,7 @@ public class CatalogEventsApiBaselineTests
         await using var db = CreateDbContext();
         var handler = CreateGetEventDetailsHandler(db);
 
-        var result = await handler.HandleGetEventDetails(new GetEventDetailsQuery(Guid.NewGuid()), CancellationToken.None);
+        var result = await handler.HandleGetEventDetails(new GetEventDetailsQuery(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
@@ -116,13 +116,13 @@ public class CatalogEventsApiBaselineTests
             TicketPrice = 50,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = CreateReserveTicketsHandler(db);
 
         var result = await handler.HandleReserveTickets(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(8, db.Events.Single(x => x.Id == eventId).AvailableTickets);
@@ -145,13 +145,13 @@ public class CatalogEventsApiBaselineTests
             TicketPrice = 50,
             AvailableTickets = 1
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = CreateReserveTicketsHandler(db);
 
         var result = await handler.HandleReserveTickets(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
@@ -176,13 +176,13 @@ public class CatalogEventsApiBaselineTests
             TicketPrice = 50,
             AvailableTickets = 8
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = CreateReleaseTicketsHandler(db);
 
         var result = await handler.HandleReleaseTickets(
             new ReleaseTicketsCommand(eventId, 2, Guid.NewGuid()),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(10, db.Events.Single(x => x.Id == eventId).AvailableTickets);

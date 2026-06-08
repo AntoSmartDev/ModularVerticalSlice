@@ -11,6 +11,8 @@ namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTicke
 /// </summary>
 public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
 {
+    private readonly ICatalogWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
+
     /// <summary>
     /// Releases tickets back to an existing catalog event.
     /// </summary>
@@ -19,7 +21,7 @@ public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
         ReleaseTicketsCommand command,
         CancellationToken cancellationToken)
     {
-        var entity = await writeDb.Events
+        var entity = await _writeDb.Events
             .FirstOrDefaultAsync(x => x.Id == command.EventId, cancellationToken);
 
         if (entity is null)

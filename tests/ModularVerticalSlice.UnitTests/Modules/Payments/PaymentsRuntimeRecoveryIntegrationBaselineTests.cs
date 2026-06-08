@@ -30,7 +30,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             TicketPrice = 20m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
             db,
@@ -46,7 +46,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     eventId,
                     "technical-failure-user",
                     1),
-                CancellationToken.None));
+                TestContext.Current.CancellationToken));
 
         var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
 
@@ -76,7 +76,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             TicketPrice = 20m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
             db,
@@ -92,7 +92,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     eventId,
                     "technical-terminal-user",
                     1),
-                CancellationToken.None));
+                TestContext.Current.CancellationToken));
 
         var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
 
@@ -121,7 +121,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             TicketPrice = 20m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
             db,
@@ -136,7 +136,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                 eventId,
                 "declined-user",
                 1),
-            CancellationToken.None);
+            TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Single(db.ChangeTracker.Entries<Application.Modules.Payments.Persistence.Entities.Payment>());
@@ -160,7 +160,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             TicketPrice = 20m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
             db,
@@ -176,7 +176,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     eventId,
                     "technical-failure-user",
                     1),
-                CancellationToken.None));
+                TestContext.Current.CancellationToken));
 
         var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
 
@@ -224,7 +224,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             TicketPrice = 20m,
             AvailableTickets = 10
         });
-        await db.SaveChangesAsync();
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
             db,
@@ -240,7 +240,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     eventId,
                     userId,
                     1),
-                CancellationToken.None));
+                TestContext.Current.CancellationToken));
 
         return PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
     }
