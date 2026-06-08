@@ -163,7 +163,7 @@ public class CatalogEventsApiBaselineTests
     }
 
     /// <summary>
-    /// Verifies that releasing tickets increases event availability.
+    /// Verifies that releasing tickets increases event availability and signals an explicit update.
     /// </summary>
     [Fact]
     public async Task ReleaseTickets_Should_Increase_AvailableTickets()
@@ -183,12 +183,32 @@ public class CatalogEventsApiBaselineTests
 
         var handler = CreateReleaseTicketsHandler(db);
 
-        var result = await handler.HandleReleaseTickets(
+        var (result, storageAction) = await handler.HandleReleaseTickets(
             new ReleaseTicketsCommand(eventId, 2, Guid.NewGuid()),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
+        Assert.IsType<Update<Event>>(storageAction);
         Assert.Equal(10, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+    }
+
+    /// <summary>
+    /// Verifies that releasing tickets for a missing event returns not-found and no storage action.
+    /// </summary>
+    [Fact]
+    public async Task ReleaseTickets_Should_Return_NotFound_When_Event_Does_Not_Exist()
+    {
+        await using var db = CreateDbContext();
+        var handler = CreateReleaseTicketsHandler(db);
+
+        var (result, storageAction) = await handler.HandleReleaseTickets(
+            new ReleaseTicketsCommand(Guid.NewGuid(), 2, Guid.NewGuid()),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal(ErrorType.NotFound, result.Error.Type);
+        Assert.Equal("Catalog.EventNotFound", result.Error.Code);
+        Assert.IsType<Nothing<Event>>(storageAction);
     }
 
     /// <summary>

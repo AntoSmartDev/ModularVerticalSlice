@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine.Attributes;
+using Wolverine.Persistence;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
@@ -15,8 +17,16 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     /// <summary>
     /// Confirms an existing pending booking.
     /// </summary>
+    /// <remarks>
+    /// Returns <see cref="Storage.Update{T}(T)"/> when the transition succeeds so that the
+    /// Wolverine runtime owns the EF transaction, and <see cref="Storage.Nothing{T}"/> when
+    /// the booking is not found or the transition is invalid (no persistence side effect needed).
+    /// The saga always invokes this via <c>bus.InvokeAsync&lt;Result&gt;</c>, so the
+    /// <see cref="Result"/> member is returned to the caller and the storage action is processed
+    /// by the runtime.
+    /// </remarks>
     [WolverineHandler]
-    public Task<Result> HandleConfirmBooking(
+    public Task<(Result, IStorageAction<Booking>)> HandleConfirmBooking(
         ConfirmBookingCommand command,
         CancellationToken cancellationToken) =>
         ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Confirm());
@@ -24,8 +34,11 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     /// <summary>
     /// Cancels an existing pending booking.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="HandleConfirmBooking"/> for the storage-action semantics.
+    /// </remarks>
     [WolverineHandler]
-    public Task<Result> HandleCancelBooking(
+    public Task<(Result, IStorageAction<Booking>)> HandleCancelBooking(
         CancelBookingCommand command,
         CancellationToken cancellationToken) =>
         ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Cancel());
@@ -33,28 +46,37 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     /// <summary>
     /// Expires an existing pending booking.
     /// </summary>
+    /// <remarks>
+    /// See <see cref="HandleConfirmBooking"/> for the storage-action semantics.
+    /// </remarks>
     [WolverineHandler]
-    public Task<Result> HandleExpireBooking(
+    public Task<(Result, IStorageAction<Booking>)> HandleExpireBooking(
         ExpireBookingCommand command,
         CancellationToken cancellationToken) =>
         ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Expire());
 
-    private async Task<Result> ApplyTransitionAsync(
+    private async Task<(Result, IStorageAction<Booking>)> ApplyTransitionAsync(
         Guid bookingId,
         CancellationToken cancellationToken,
-        Func<Persistence.Entities.Booking, Result> transition)
+        Func<Booking, Result> transition)
     {
         var booking = await _writeDb.Bookings
             .FirstOrDefaultAsync(x => x.Id == bookingId, cancellationToken);
 
         if (booking is null)
         {
-            return Result.Failure(
-                Error.NotFound(
-                    "Bookings.BookingNotFound",
-                    "The target booking was not found."));
+            return (
+                Result.Failure(
+                    Error.NotFound(
+                        "Bookings.BookingNotFound",
+                        "The target booking was not found.")),
+                Storage.Nothing<Booking>());
         }
 
-        return transition(booking);
+        var result = transition(booking);
+
+        return result.IsSuccess
+            ? (result, Storage.Update(booking))
+            : (result, Storage.Nothing<Booking>());
     }
 }

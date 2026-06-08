@@ -16,6 +16,7 @@ using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine;
+using Wolverine.Persistence;
 using Wolverine.Persistence.Sagas;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
@@ -227,7 +228,7 @@ public class BookingLifecycleApiBaselineTests
     }
 
     /// <summary>
-    /// Verifies that the confirm handler applies the entity transition to a pending booking.
+    /// Verifies that the confirm handler applies the entity transition and signals an explicit update.
     /// </summary>
     [Fact]
     public async Task ConfirmBookingCommand_Should_Update_Booking_Status_To_Confirmed()
@@ -249,14 +250,15 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
+        var (result, storageAction) = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
+        Assert.IsType<Update<Booking>>(storageAction);
         Assert.Equal(BookingStatus.Confirmed, db.Bookings.Single(x => x.Id == bookingId).Status);
     }
 
     /// <summary>
-    /// Verifies that the cancel handler applies the entity transition to a pending booking.
+    /// Verifies that the cancel handler applies the entity transition and signals an explicit update.
     /// </summary>
     [Fact]
     public async Task CancelBookingCommand_Should_Update_Booking_Status_To_Cancelled()
@@ -278,14 +280,15 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleCancelBooking(new CancelBookingCommand(bookingId), TestContext.Current.CancellationToken);
+        var (result, storageAction) = await handler.HandleCancelBooking(new CancelBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
+        Assert.IsType<Update<Booking>>(storageAction);
         Assert.Equal(BookingStatus.Cancelled, db.Bookings.Single(x => x.Id == bookingId).Status);
     }
 
     /// <summary>
-    /// Verifies that the expire handler applies the entity transition to a pending booking.
+    /// Verifies that the expire handler applies the entity transition and signals an explicit update.
     /// </summary>
     [Fact]
     public async Task ExpireBookingCommand_Should_Update_Booking_Status_To_Expired()
@@ -307,14 +310,15 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleExpireBooking(new ExpireBookingCommand(bookingId), TestContext.Current.CancellationToken);
+        var (result, storageAction) = await handler.HandleExpireBooking(new ExpireBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
+        Assert.IsType<Update<Booking>>(storageAction);
         Assert.Equal(BookingStatus.Expired, db.Bookings.Single(x => x.Id == bookingId).Status);
     }
 
     /// <summary>
-    /// Verifies that lifecycle handlers return not found when the booking does not exist.
+    /// Verifies that lifecycle handlers return not-found and no storage action for a missing booking.
     /// </summary>
     [Fact]
     public async Task BookingLifecycleHandler_Should_Return_NotFound_For_Missing_Booking()
@@ -322,15 +326,17 @@ public class BookingLifecycleApiBaselineTests
         await using var db = CreateDbContext();
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
+        var (result, storageAction) = await handler.HandleConfirmBooking(new ConfirmBookingCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
         Assert.Equal("Bookings.BookingNotFound", result.Error.Code);
+        Assert.IsType<Nothing<Booking>>(storageAction);
     }
 
     /// <summary>
-    /// Verifies that lifecycle handlers preserve the entity conflict when the transition is invalid.
+    /// Verifies that lifecycle handlers preserve the entity conflict and suppress the storage action
+    /// when the transition is invalid.
     /// </summary>
     [Fact]
     public async Task BookingLifecycleHandler_Should_Return_Conflict_For_Invalid_Transition()
@@ -352,11 +358,12 @@ public class BookingLifecycleApiBaselineTests
 
         var handler = new BookingLifecycleHandler(db);
 
-        var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
+        var (result, storageAction) = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
         Assert.Equal("Bookings.InvalidConfirmation", result.Error.Code);
+        Assert.IsType<Nothing<Booking>>(storageAction);
         Assert.Equal(BookingStatus.Cancelled, db.Bookings.Single(x => x.Id == bookingId).Status);
     }
 
