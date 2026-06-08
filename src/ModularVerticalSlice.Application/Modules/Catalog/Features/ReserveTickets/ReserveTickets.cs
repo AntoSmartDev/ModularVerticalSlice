@@ -9,8 +9,11 @@ namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTicke
 /// <summary>
 /// Handles ticket reservation for a specific catalog event.
 /// </summary>
+[Transactional]
 public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
 {
+    private readonly ICatalogWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
+
     /// <summary>
     /// Reserves tickets for an existing catalog event.
     /// </summary>
@@ -19,7 +22,7 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
         ReserveTicketsCommand command,
         CancellationToken cancellationToken)
     {
-        var entity = await writeDb.Events
+        var entity = await _writeDb.Events
             .FirstOrDefaultAsync(x => x.Id == command.EventId, cancellationToken);
 
         if (entity is null)

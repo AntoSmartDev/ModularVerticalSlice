@@ -76,6 +76,7 @@ internal static class CreateBookingValidator
 /// <summary>
 /// Handles the creation of a baseline pending booking.
 /// </summary>
+[Transactional]
 public sealed class CreateBookingHandler(
     IBookingWriteDbContext writeDb,
     IMessageBus bus,

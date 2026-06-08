@@ -27,7 +27,7 @@ builder.Host.UseWolverine(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddApplicationModules(builder.Configuration, modules);
-builder.Services.AddPersistence(builder.Configuration);
+builder.Services.AddPersistence();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();

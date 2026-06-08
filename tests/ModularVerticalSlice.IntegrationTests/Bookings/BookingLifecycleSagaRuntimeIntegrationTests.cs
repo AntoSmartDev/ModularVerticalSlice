@@ -6,8 +6,10 @@ using Microsoft.Extensions.Hosting;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
+using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Modules;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.WebApi;
@@ -22,10 +24,11 @@ namespace ModularVerticalSlice.IntegrationTests.Bookings;
 public sealed class BookingLifecycleSagaRuntimeIntegrationTests
 {
     /// <summary>
-    /// Proves persistence, BookingId correlation, terminal completion, and late-message handling.
+    /// Proves the correlated success continuation commits the booking confirmation
+    /// through the Wolverine-owned EF transaction boundary.
     /// </summary>
     [Fact]
-    public async Task BookingLifecycleSaga_Should_Persist_Correlate_Complete_And_Ignore_Late_Message()
+    public async Task BookingLifecycleSaga_Should_Commit_Successful_Booking_Transition_Through_Runtime_Transaction()
     {
         var bookingId = Guid.NewGuid();
         var eventId = Guid.NewGuid();
@@ -35,13 +38,17 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
 
         try
         {
-            await SeedPendingBookingAsync(host, bookingId, eventId, createdAt);
+            await SeedPendingBookingAsync(
+                host,
+                bookingId,
+                eventId,
+                createdAt,
+                userId: "integration-user");
 
             var startSession = await host.InvokeMessageAndWaitAsync(
                 new BookingCreatedEvent(bookingId, eventId, "integration-user", 2, createdAt));
 
             Assert.Empty(startSession.AllExceptions());
-
             var persistedSaga = await ReadSagaBodyAsync(host, bookingId);
             Assert.NotNull(persistedSaga);
             Assert.Contains(bookingId.ToString(), persistedSaga, StringComparison.OrdinalIgnoreCase);
@@ -53,6 +60,10 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
             Assert.Empty(continuationSession.AllExceptions());
             Assert.Null(await ReadSagaBodyAsync(host, bookingId));
 
+            var bookingStatus = await ReadBookingStatusAsync(host, bookingId);
+
+            Assert.Equal(BookingStatus.Confirmed, bookingStatus);
+
             var lateTimeoutSession = await startSession.PlayScheduledMessagesAsync(
                 TimeSpan.FromSeconds(10));
 
@@ -63,6 +74,66 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
         {
             await DeleteSagaAsync(host, bookingId);
             await DeleteBookingAsync(host, bookingId);
+            await DeleteEventAsync(host, eventId);
+        }
+    }
+
+    /// <summary>
+    /// Proves the correlated business-failure continuation commits the booking cancellation
+    /// and ticket-release compensation.
+    /// </summary>
+    [Fact]
+    public async Task BookingLifecycleSaga_Should_Commit_Cancellation_And_Ticket_Release_On_Business_Failure()
+    {
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow;
+
+        using var host = await StartHostAsync();
+
+        try
+        {
+            await SeedPendingBookingAsync(
+                host,
+                bookingId,
+                eventId,
+                createdAt,
+                userId: "integration-user-declined");
+
+            var startSession = await host.InvokeMessageAndWaitAsync(
+                new BookingCreatedEvent(bookingId, eventId, "integration-user-declined", 2, createdAt));
+
+            Assert.Empty(startSession.AllExceptions());
+            Assert.NotNull(await ReadSagaBodyAsync(host, bookingId));
+
+            await SeedEventAsync(
+                host,
+                eventId,
+                createdAt,
+                availableTickets: 8,
+                ticketPrice: 35m);
+
+            var continuationSession = await host.InvokeMessageAndWaitAsync(
+                new PaymentFailedEvent(
+                    bookingId,
+                    Guid.NewGuid(),
+                    "Payment was declined.",
+                    createdAt.AddMinutes(1)));
+
+            Assert.Empty(continuationSession.AllExceptions());
+            Assert.Null(await ReadSagaBodyAsync(host, bookingId));
+
+            var bookingStatus = await ReadBookingStatusAsync(host, bookingId);
+            var availableTickets = await ReadAvailableTicketsAsync(host, eventId);
+
+            Assert.Equal(BookingStatus.Cancelled, bookingStatus);
+            Assert.Equal(10, availableTickets);
+        }
+        finally
+        {
+            await DeleteSagaAsync(host, bookingId);
+            await DeleteBookingAsync(host, bookingId);
+            await DeleteEventAsync(host, eventId);
         }
     }
 
@@ -84,7 +155,7 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
         ];
 
         builder.Services.AddApplicationModules(builder.Configuration, modules);
-        builder.Services.AddPersistence(builder.Configuration);
+        builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
 
         var host = builder.Build();
@@ -103,7 +174,8 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
         IHost host,
         Guid bookingId,
         Guid eventId,
-        DateTimeOffset createdAt)
+        DateTimeOffset createdAt,
+        string userId)
     {
         await using var scope = host.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -114,12 +186,56 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
             EventId = eventId,
             Quantity = 2,
             Status = BookingStatus.Pending,
-            UserId = "integration-user",
+            UserId = userId,
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = createdAt
         });
 
         await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedEventAsync(
+        IHost host,
+        Guid eventId,
+        DateTimeOffset createdAt,
+        int availableTickets,
+        decimal ticketPrice)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        db.Events.Add(new Event
+        {
+            Id = eventId,
+            Title = "Runtime integration event",
+            Date = createdAt.AddDays(7),
+            TicketPrice = ticketPrice,
+            AvailableTickets = availableTickets
+        });
+
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task<BookingStatus?> ReadBookingStatusAsync(IHost host, Guid bookingId)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        return await db.Bookings
+            .Where(booking => booking.Id == bookingId)
+            .Select(booking => (BookingStatus?)booking.Status)
+            .SingleOrDefaultAsync();
+    }
+
+    private static async Task<int?> ReadAvailableTicketsAsync(IHost host, Guid eventId)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        return await db.Events
+            .Where(@event => @event.Id == eventId)
+            .Select(@event => (int?)@event.AvailableTickets)
+            .SingleOrDefaultAsync();
     }
 
     private static async Task<string?> ReadSagaBodyAsync(IHost host, Guid bookingId)
@@ -147,6 +263,16 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
 
         await db.Bookings
             .Where(booking => booking.Id == bookingId)
+            .ExecuteDeleteAsync();
+    }
+
+    private static async Task DeleteEventAsync(IHost host, Guid eventId)
+    {
+        await using var scope = host.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        await db.Events
+            .Where(@event => @event.Id == eventId)
             .ExecuteDeleteAsync();
     }
 

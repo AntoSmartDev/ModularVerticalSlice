@@ -8,8 +8,11 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 /// <summary>
 /// Handles the Bookings lifecycle state-transition commands.
 /// </summary>
+[Transactional]
 public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
 {
+    private readonly IBookingWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
+
     /// <summary>
     /// Confirms an existing pending booking.
     /// </summary>
@@ -42,7 +45,7 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
         CancellationToken cancellationToken,
         Func<Persistence.Entities.Booking, Result> transition)
     {
-        var booking = await writeDb.Bookings
+        var booking = await _writeDb.Bookings
             .FirstOrDefaultAsync(x => x.Id == bookingId, cancellationToken);
 
         if (booking is null)
