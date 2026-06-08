@@ -3,13 +3,21 @@ using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine.Attributes;
-using Wolverine.Persistence;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 
 /// <summary>
 /// Handles the Bookings lifecycle state-transition commands.
 /// </summary>
+/// <remarks>
+/// These handlers were evaluated for Wolverine EF Storage Operations (T002) and intentionally
+/// left on the plain <see cref="Result"/> return shape. The <see cref="Booking"/> is already
+/// loaded and tracked by the write DbContext, so the mutation is committed by
+/// <c>AutoApplyTransactions()</c>; an explicit <c>Storage.Update</c> would be functionally
+/// redundant and only add tuple noise across three handlers and the shared helper, without any
+/// correctness or transactional gain. Storage Operations are kept where they read naturally
+/// (the Catalog <c>ReserveTickets</c>/<c>ReleaseTickets</c> pair) instead of applied uniformly.
+/// </remarks>
 public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
 {
     private readonly IBookingWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
@@ -17,16 +25,8 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     /// <summary>
     /// Confirms an existing pending booking.
     /// </summary>
-    /// <remarks>
-    /// Returns <see cref="Storage.Update{T}(T)"/> when the transition succeeds so that the
-    /// Wolverine runtime owns the EF transaction, and <see cref="Storage.Nothing{T}"/> when
-    /// the booking is not found or the transition is invalid (no persistence side effect needed).
-    /// The saga always invokes this via <c>bus.InvokeAsync&lt;Result&gt;</c>, so the
-    /// <see cref="Result"/> member is returned to the caller and the storage action is processed
-    /// by the runtime.
-    /// </remarks>
     [WolverineHandler]
-    public Task<(Result, IStorageAction<Booking>)> HandleConfirmBooking(
+    public Task<Result> HandleConfirmBooking(
         ConfirmBookingCommand command,
         CancellationToken cancellationToken) =>
         ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Confirm());
@@ -34,11 +34,8 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     /// <summary>
     /// Cancels an existing pending booking.
     /// </summary>
-    /// <remarks>
-    /// See <see cref="HandleConfirmBooking"/> for the storage-action semantics.
-    /// </remarks>
     [WolverineHandler]
-    public Task<(Result, IStorageAction<Booking>)> HandleCancelBooking(
+    public Task<Result> HandleCancelBooking(
         CancelBookingCommand command,
         CancellationToken cancellationToken) =>
         ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Cancel());
@@ -46,16 +43,13 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     /// <summary>
     /// Expires an existing pending booking.
     /// </summary>
-    /// <remarks>
-    /// See <see cref="HandleConfirmBooking"/> for the storage-action semantics.
-    /// </remarks>
     [WolverineHandler]
-    public Task<(Result, IStorageAction<Booking>)> HandleExpireBooking(
+    public Task<Result> HandleExpireBooking(
         ExpireBookingCommand command,
         CancellationToken cancellationToken) =>
         ApplyTransitionAsync(command.BookingId, cancellationToken, booking => booking.Expire());
 
-    private async Task<(Result, IStorageAction<Booking>)> ApplyTransitionAsync(
+    private async Task<Result> ApplyTransitionAsync(
         Guid bookingId,
         CancellationToken cancellationToken,
         Func<Booking, Result> transition)
@@ -65,18 +59,12 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
 
         if (booking is null)
         {
-            return (
-                Result.Failure(
-                    Error.NotFound(
-                        "Bookings.BookingNotFound",
-                        "The target booking was not found.")),
-                Storage.Nothing<Booking>());
+            return Result.Failure(
+                Error.NotFound(
+                    "Bookings.BookingNotFound",
+                    "The target booking was not found."));
         }
 
-        var result = transition(booking);
-
-        return result.IsSuccess
-            ? (result, Storage.Update(booking))
-            : (result, Storage.Nothing<Booking>());
+        return transition(booking);
     }
 }
