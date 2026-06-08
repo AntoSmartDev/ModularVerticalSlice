@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine;
 using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents;
@@ -65,10 +67,12 @@ public static class GetUpcomingEventsEndpoint
     }
 
     private static async Task<IResult> GetUpcomingEventsAsync(
-        GetUpcomingEventsHandler handler,
+        [FromServices] IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleGetUpcomingEvents(new GetUpcomingEventsQuery(), cancellationToken);
+        var result = await bus.InvokeAsync<Result<IReadOnlyList<EventReadModel>>>(
+            new GetUpcomingEventsQuery(),
+            cancellationToken);
         return result.ToHttpResponse();
     }
 }

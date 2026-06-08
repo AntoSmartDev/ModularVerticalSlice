@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
@@ -7,6 +8,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine;
 using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
@@ -114,10 +116,12 @@ public static class GetBookingDetailsEndpoint
 
     private static async Task<IResult> GetBookingDetailsAsync(
         Guid id,
-        GetBookingDetailsHandler handler,
+        [FromServices] IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleGetBookingDetails(new GetBookingDetailsQuery(id), cancellationToken);
+        var result = await bus.InvokeAsync<Result<BookingDetailsReadModel>>(
+            new GetBookingDetailsQuery(id),
+            cancellationToken);
         return result.ToHttpResponse();
     }
 }

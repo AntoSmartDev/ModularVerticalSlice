@@ -41,3 +41,9 @@ app.MapApplicationModules(modules);
 app.MapGet("/", () => Results.Text("ModularVerticalSlice.WebApi"));
 
 app.Run();
+
+/// <summary>
+/// Exposes the implicit Program entry point so integration tests can host the
+/// application through <c>WebApplicationFactory&lt;Program&gt;</c>.
+/// </summary>
+public partial class Program;

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
@@ -186,10 +187,10 @@ public static class CreateBookingEndpoint
 
     private static async Task<IResult> CreateBookingAsync(
         CreateBookingCommand command,
-        CreateBookingHandler handler,
+        [FromServices] IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleCreateBooking(command, cancellationToken);
+        var result = await bus.InvokeAsync<Result<Guid>>(command, cancellationToken);
         return result.ToHttpResponse();
     }
 }

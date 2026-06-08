@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine;
 using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails;
@@ -70,10 +72,12 @@ public static class GetEventDetailsEndpoint
 
     private static async Task<IResult> GetEventDetailsAsync(
         Guid id,
-        GetEventDetailsHandler handler,
+        [FromServices] IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleGetEventDetails(new GetEventDetailsQuery(id), cancellationToken);
+        var result = await bus.InvokeAsync<Result<EventReadModel>>(
+            new GetEventDetailsQuery(id),
+            cancellationToken);
         return result.ToHttpResponse();
     }
 }

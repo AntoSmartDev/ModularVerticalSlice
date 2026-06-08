@@ -1,11 +1,13 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine;
 using Wolverine.Attributes;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent;
@@ -115,10 +117,10 @@ public static class CreateEventEndpoint
 
     private static async Task<IResult> CreateEventAsync(
         CreateEventCommand command,
-        CreateEventHandler handler,
+        [FromServices] IMessageBus bus,
         CancellationToken cancellationToken)
     {
-        var result = await handler.HandleCreateEvent(command, cancellationToken);
+        var result = await bus.InvokeAsync<Result<EventReadModel>>(command, cancellationToken);
         return result.ToHttpResponse();
     }
 }
