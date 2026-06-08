@@ -13,6 +13,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Persistence;
 using CreateEventSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent.CreateEventHandler;
 using GetEventDetailsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails.GetEventDetailsHandler;
 using GetUpcomingEventsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents.GetUpcomingEventsHandler;
@@ -120,11 +121,12 @@ public class CatalogEventsApiBaselineTests
 
         var handler = CreateReserveTicketsHandler(db);
 
-        var result = await handler.HandleReserveTickets(
+        var (result, storageAction) = await handler.HandleReserveTickets(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
+        Assert.IsType<Update<Event>>(storageAction);
         Assert.Equal(8, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
@@ -149,13 +151,14 @@ public class CatalogEventsApiBaselineTests
 
         var handler = CreateReserveTicketsHandler(db);
 
-        var result = await handler.HandleReserveTickets(
+        var (result, storageAction) = await handler.HandleReserveTickets(
             new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
         Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
+        Assert.IsType<Nothing<Event>>(storageAction);
         Assert.Equal(1, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 

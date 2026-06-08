@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine.Attributes;
+using Wolverine.Persistence;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
 
@@ -16,8 +18,20 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
     /// <summary>
     /// Reserves tickets for an existing catalog event.
     /// </summary>
+    /// <remarks>
+    /// The handler returns a Wolverine EF storage side effect together with the business
+    /// <see cref="Result"/>:
+    /// <list type="bullet">
+    /// <item><see cref="Storage.Update{T}(T)"/> on success makes the persistence intent explicit
+    /// and lets the Wolverine runtime own the EF transaction around the commit.</item>
+    /// <item><see cref="Storage.Nothing{T}"/> on a not-found or business-failure path leaves
+    /// persistence untouched.</item>
+    /// </list>
+    /// The reservation always runs through the bus (<c>InvokeAsync</c>), so the side effect is
+    /// processed by the Wolverine runtime; the <see cref="Result"/> member is returned to the caller.
+    /// </remarks>
     [WolverineHandler]
-    public async Task<Result> HandleReserveTickets(
+    public async Task<(Result, IStorageAction<Event>)> HandleReserveTickets(
         ReserveTicketsCommand command,
         CancellationToken cancellationToken)
     {
@@ -26,19 +40,21 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
 
         if (entity is null)
         {
-            return Result.Failure(
-                Error.NotFound(
-                    "Catalog.EventNotFound",
-                    "The requested event was not found."));
+            return (
+                Result.Failure(
+                    Error.NotFound(
+                        "Catalog.EventNotFound",
+                        "The requested event was not found.")),
+                Storage.Nothing<Event>());
         }
 
         var reservationResult = entity.ReserveTickets(command.Quantity);
 
         if (reservationResult.IsFailure)
         {
-            return reservationResult;
+            return (reservationResult, Storage.Nothing<Event>());
         }
 
-        return Result.Success();
+        return (Result.Success(), Storage.Update(entity));
     }
 }
