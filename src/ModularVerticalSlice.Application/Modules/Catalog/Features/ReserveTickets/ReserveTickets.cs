@@ -35,10 +35,10 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
         ReserveTicketsCommand command,
         CancellationToken cancellationToken)
     {
-        var entity = await _writeDb.Events
+        var trackedEvent = await _writeDb.Events
             .FirstOrDefaultAsync(x => x.Id == command.EventId, cancellationToken);
 
-        if (entity is null)
+        if (trackedEvent is null)
         {
             return (
                 Result.Failure(
@@ -48,13 +48,13 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
                 Storage.Nothing<Event>());
         }
 
-        var reservationResult = entity.ReserveTickets(command.Quantity);
+        var reservationResult = trackedEvent.ReserveTickets(command.Quantity);
 
         if (reservationResult.IsFailure)
         {
             return (reservationResult, Storage.Nothing<Event>());
         }
 
-        return (Result.Success(), Storage.Update(entity));
+        return (Result.Success(), Storage.Update(trackedEvent));
     }
 }
