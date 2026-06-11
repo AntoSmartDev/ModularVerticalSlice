@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
 using ModularVerticalSlice.Application.Shared.Modules;
 
 namespace ModularVerticalSlice.Application.Modules.Notifications;
@@ -17,6 +18,9 @@ public sealed class NotificationsModule : IModule
     /// <inheritdoc />
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddSingleton<FakeBookingConfirmationEmailSender>();
+        services.AddSingleton<IBookingConfirmationEmailSender>(
+            serviceProvider => serviceProvider.GetRequiredService<FakeBookingConfirmationEmailSender>());
     }
 
     /// <inheritdoc />
