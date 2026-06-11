@@ -233,12 +233,14 @@ public class BookingLifecycleApiBaselineTests
     public async Task ConfirmBookingCommand_Should_Update_Booking_Status_To_Confirmed()
     {
         var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var confirmedAt = new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero);
         await using var db = CreateDbContext();
 
         db.Bookings.Add(new Booking
         {
             Id = bookingId,
-            EventId = Guid.NewGuid(),
+            EventId = eventId,
             Quantity = 2,
             Status = BookingStatus.Pending,
             UserId = "user-1",
@@ -247,12 +249,27 @@ public class BookingLifecycleApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new BookingLifecycleHandler(db);
+        var bus = new TestMessageContext();
+        var handler = new BookingLifecycleHandler(db, bus, new FixedTimeProvider(confirmedAt));
 
         var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
         Assert.Equal(BookingStatus.Confirmed, db.Bookings.Single(x => x.Id == bookingId).Status);
+        Assert.Contains(bus.Published, x =>
+            x is Envelope
+            {
+                Message: BookingConfirmedEvent
+                {
+                    BookingId: var publishedBookingId,
+                    EventId: var publishedEventId,
+                    UserId: "user-1",
+                    ConfirmedAt: var publishedAt
+                }
+            } &&
+            publishedBookingId == bookingId &&
+            publishedEventId == eventId &&
+            publishedAt == confirmedAt);
     }
 
     /// <summary>
@@ -276,7 +293,7 @@ public class BookingLifecycleApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new BookingLifecycleHandler(db);
+        var handler = CreateLifecycleHandler(db);
 
         var result = await handler.HandleCancelBooking(new CancelBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
@@ -305,7 +322,7 @@ public class BookingLifecycleApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new BookingLifecycleHandler(db);
+        var handler = CreateLifecycleHandler(db);
 
         var result = await handler.HandleExpireBooking(new ExpireBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
@@ -320,13 +337,15 @@ public class BookingLifecycleApiBaselineTests
     public async Task BookingLifecycleHandler_Should_Return_NotFound_For_Missing_Booking()
     {
         await using var db = CreateDbContext();
-        var handler = new BookingLifecycleHandler(db);
+        var bus = new TestMessageContext();
+        var handler = CreateLifecycleHandler(db, bus);
 
         var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(Guid.NewGuid()), TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.NotFound, result.Error.Type);
         Assert.Equal("Bookings.BookingNotFound", result.Error.Code);
+        Assert.Empty(bus.Published);
     }
 
     /// <summary>
@@ -350,7 +369,8 @@ public class BookingLifecycleApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = new BookingLifecycleHandler(db);
+        var bus = new TestMessageContext();
+        var handler = CreateLifecycleHandler(db, bus);
 
         var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
@@ -358,6 +378,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
         Assert.Equal("Bookings.InvalidConfirmation", result.Error.Code);
         Assert.Equal(BookingStatus.Cancelled, db.Bookings.Single(x => x.Id == bookingId).Status);
+        Assert.Empty(bus.Published);
     }
 
     /// <summary>
@@ -1196,6 +1217,15 @@ public class BookingLifecycleApiBaselineTests
             bus,
             currentUserContext,
             timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
+
+    private static BookingLifecycleHandler CreateLifecycleHandler(
+        AppDbContext db,
+        TestMessageContext? bus = null,
+        TimeProvider? timeProvider = null) =>
+        new(
+            db,
+            bus ?? new TestMessageContext(),
+            timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero)));
 
     private static TestMessageContext CreateMessageBus(
         CreateBookingCommand command,
