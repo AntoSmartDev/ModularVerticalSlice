@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine.Attributes;
 
@@ -8,6 +9,15 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 /// <summary>
 /// Handles the Bookings lifecycle state-transition commands.
 /// </summary>
+/// <remarks>
+/// These handlers were evaluated for Wolverine EF Storage Operations (T002) and intentionally
+/// left on the plain <see cref="Result"/> return shape. The <see cref="Booking"/> is already
+/// loaded and tracked by the write DbContext, so the mutation is committed by
+/// <c>AutoApplyTransactions()</c>; an explicit <c>Storage.Update</c> would be functionally
+/// redundant and only add tuple noise across three handlers and the shared helper, without any
+/// correctness or transactional gain. Storage Operations are kept where they read naturally
+/// (the Catalog <c>ReserveTickets</c>/<c>ReleaseTickets</c> pair) instead of applied uniformly.
+/// </remarks>
 public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
 {
     private readonly IBookingWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
@@ -42,7 +52,7 @@ public sealed class BookingLifecycleHandler(IBookingWriteDbContext writeDb)
     private async Task<Result> ApplyTransitionAsync(
         Guid bookingId,
         CancellationToken cancellationToken,
-        Func<Persistence.Entities.Booking, Result> transition)
+        Func<Booking, Result> transition)
     {
         var booking = await _writeDb.Bookings
             .FirstOrDefaultAsync(x => x.Id == bookingId, cancellationToken);

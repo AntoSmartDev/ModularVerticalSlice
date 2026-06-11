@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
+using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine.Attributes;
+using Wolverine.Persistence;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets;
 
@@ -16,8 +18,19 @@ public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
     /// <summary>
     /// Releases tickets back to an existing catalog event.
     /// </summary>
+    /// <remarks>
+    /// The handler returns a Wolverine EF storage side effect together with the business
+    /// <see cref="Result"/>:
+    /// <list type="bullet">
+    /// <item><see cref="Storage.Update{T}(T)"/> on success makes the persistence intent explicit
+    /// and lets the Wolverine runtime own the EF transaction around the commit.</item>
+    /// <item><see cref="Storage.Nothing{T}"/> on a not-found path leaves persistence untouched.</item>
+    /// </list>
+    /// The release always runs through the bus (<c>PublishAsync</c>) from the saga compensation
+    /// path, so the side effect is processed by the Wolverine runtime.
+    /// </remarks>
     [WolverineHandler]
-    public async Task<Result> HandleReleaseTickets(
+    public async Task<(Result, IStorageAction<Event>)> HandleReleaseTickets(
         ReleaseTicketsCommand command,
         CancellationToken cancellationToken)
     {
@@ -26,12 +39,21 @@ public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
 
         if (entity is null)
         {
-            return Result.Failure(
-                Error.NotFound(
-                    "Catalog.EventNotFound",
-                    "The requested event was not found."));
+            return (
+                Result.Failure(
+                    Error.NotFound(
+                        "Catalog.EventNotFound",
+                        "The requested event was not found.")),
+                Storage.Nothing<Event>());
         }
 
-        return entity.ReleaseTickets(command.Quantity);
+        var releaseResult = entity.ReleaseTickets(command.Quantity);
+
+        if (releaseResult.IsFailure)
+        {
+            return (releaseResult, Storage.Nothing<Event>());
+        }
+
+        return (Result.Success(), Storage.Update(entity));
     }
 }
