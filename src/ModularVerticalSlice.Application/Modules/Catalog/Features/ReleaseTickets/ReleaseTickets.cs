@@ -34,10 +34,10 @@ public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
         ReleaseTicketsCommand command,
         CancellationToken cancellationToken)
     {
-        var entity = await _writeDb.Events
+        var trackedEvent = await _writeDb.Events
             .FirstOrDefaultAsync(x => x.Id == command.EventId, cancellationToken);
 
-        if (entity is null)
+        if (trackedEvent is null)
         {
             return (
                 Result.Failure(
@@ -47,13 +47,13 @@ public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
                 Storage.Nothing<Event>());
         }
 
-        var releaseResult = entity.ReleaseTickets(command.Quantity);
+        var releaseResult = trackedEvent.ReleaseTickets(command.Quantity);
 
         if (releaseResult.IsFailure)
         {
             return (releaseResult, Storage.Nothing<Event>());
         }
 
-        return (Result.Success(), Storage.Update(entity));
+        return (Result.Success(), Storage.Update(trackedEvent));
     }
 }
