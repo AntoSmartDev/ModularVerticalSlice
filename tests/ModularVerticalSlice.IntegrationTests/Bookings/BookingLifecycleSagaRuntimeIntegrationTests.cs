@@ -9,6 +9,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Notifications;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
@@ -153,7 +154,8 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
         IModule[] modules =
         [
             new BookingsModule(),
-            new PaymentsModule()
+            new PaymentsModule(),
+            new NotificationsModule()
         ];
 
         builder.Services.AddApplicationModules(builder.Configuration, modules);
@@ -310,7 +312,7 @@ public sealed class PersistenceRegistrationScopeTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule()];
+        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new NotificationsModule()];
         builder.Services.AddApplicationModules(builder.Configuration, modules);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
@@ -364,7 +366,7 @@ public sealed class BookingLifecycleHandlerDirectCommitTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule()];
+        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new NotificationsModule()];
         builder.Services.AddApplicationModules(builder.Configuration, modules);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));

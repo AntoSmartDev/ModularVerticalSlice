@@ -1,9 +1,11 @@
-﻿using ModularVerticalSlice.Application.Modules.Bookings;
+using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Notifications;
 using ModularVerticalSlice.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
@@ -36,6 +38,8 @@ public static class ApplicationMessagingExtensions
         options.Policies.AutoApplyTransactions();
         options.AddSagaType<BookingLifecycleSaga>("booking_lifecycle_sagas");
         PaymentsRuntimeRecoveryPolicies.Configure(options);
+        NotificationsRuntimeRecoveryPolicies.Configure(options);
+        options.LocalQueueFor<BookingConfirmedEvent>().UseDurableInbox();
         options
             .PersistMessagesWithPostgresql(connectionString, "messaging")
             .EnableMessageTransport(_ => { });

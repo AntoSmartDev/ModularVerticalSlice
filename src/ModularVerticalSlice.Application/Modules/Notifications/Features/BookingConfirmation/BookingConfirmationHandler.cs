@@ -11,6 +11,7 @@ public sealed class BookingConfirmationHandler(IBookingConfirmationEmailSender e
     /// <summary>
     /// Sends the confirmation email represented by a confirmed booking event.
     /// </summary>
+    [Idempotent]
     [WolverineHandler]
     public Task HandleBookingConfirmedEvent(
         BookingConfirmedEvent message,
