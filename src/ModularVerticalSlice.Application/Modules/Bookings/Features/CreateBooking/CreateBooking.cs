@@ -180,7 +180,8 @@ public static class CreateBookingEndpoint
             .WithSummary("Creates a baseline booking request")
             .Produces<Guid>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status422UnprocessableEntity);
+            .ProducesProblem(StatusCodes.Status422UnprocessableEntity)
+            .RequireAuthorization(AuthorizationPolicies.BookingsWrite);
 
         return endpoints;
     }

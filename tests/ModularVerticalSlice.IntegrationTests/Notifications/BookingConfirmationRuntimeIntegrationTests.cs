@@ -29,8 +29,9 @@ public sealed class BookingConfirmationRuntimeIntegrationTests
         var message = NewMessage("duplicate-user");
         var envelopeId = Guid.NewGuid();
 
-        await EnqueueAsync(host, message, envelopeId);
-        await WaitUntilAsync(() => sender.AttemptsFor(message.UserId) == 1);
+        await host
+            .TrackActivity()
+            .ExecuteAndWaitAsync(_ => EnqueueAsync(host, message, envelopeId));
         await EnqueueAsync(host, message, envelopeId);
         await Task.Delay(TimeSpan.FromSeconds(1), TestContext.Current.CancellationToken);
 
@@ -108,17 +109,4 @@ public sealed class BookingConfirmationRuntimeIntegrationTests
             .EnqueueDirectlyAsync([envelope]);
     }
 
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        var timeoutAt = DateTimeOffset.UtcNow.AddSeconds(10);
-        while (!condition())
-        {
-            if (DateTimeOffset.UtcNow >= timeoutAt)
-            {
-                throw new TimeoutException("The expected notification runtime condition was not reached.");
-            }
-
-            await Task.Delay(100, TestContext.Current.CancellationToken);
-        }
-    }
 }

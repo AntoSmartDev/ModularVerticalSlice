@@ -109,7 +109,8 @@ public static class GetBookingDetailsEndpoint
             .WithSummary("Returns booking details for the current user")
             .Produces<BookingDetailsReadModel>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
-            .ProducesProblem(StatusCodes.Status404NotFound);
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization(AuthorizationPolicies.BookingsRead);
 
         return endpoints;
     }

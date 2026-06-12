@@ -97,7 +97,8 @@ public static class GetCustomerBookingsEndpoint
             .WithTags("Bookings")
             .WithSummary("Returns the current user's bookings")
             .Produces<IReadOnlyList<CustomerBookingReadModel>>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status401Unauthorized);
+            .ProducesProblem(StatusCodes.Status401Unauthorized)
+            .RequireAuthorization(AuthorizationPolicies.BookingsRead);
 
         return endpoints;
     }
