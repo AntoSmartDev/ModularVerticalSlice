@@ -27,6 +27,7 @@ builder.Host.UseWolverine(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddWebApiAuthentication(builder.Configuration, builder.Environment);
+builder.Services.AddWebApiAuthorization();
 builder.Services.AddApplicationModules(builder.Configuration, modules);
 builder.Services.AddPersistence();
 builder.Services.AddOpenApi();
@@ -39,6 +40,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapApplicationModules(modules);
 app.MapGet("/", () => Results.Text("ModularVerticalSlice.WebApi"));
