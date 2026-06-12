@@ -6,6 +6,7 @@ using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.WebApi.Infrastructure.Authentication;
+using ModularVerticalSlice.WebApi.Infrastructure.Observability;
 using ModularVerticalSlice.WebApi;
 using Wolverine;
 
@@ -26,6 +27,7 @@ builder.Host.UseWolverine(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
+builder.Services.AddCorrelation();
 builder.Services.AddWebApiAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddWebApiAuthorization();
 builder.Services.AddProblemDetails();
@@ -40,6 +42,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseCorrelationId();
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
