@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent;
@@ -122,8 +123,9 @@ public sealed class CommandEndpointsHttpIntegrationTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             // Development loads appsettings.Development.json (connection string)
-            // and enables the demo-user fallback used by the booking endpoint.
+            // and explicitly enables FakeAuth used by the booking endpoint.
             builder.UseEnvironment("Development");
+            builder.ConfigureLogging(logging => logging.ClearProviders());
         }
     }
 

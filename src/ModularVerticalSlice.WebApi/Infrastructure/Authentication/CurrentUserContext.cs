@@ -8,31 +8,15 @@ namespace ModularVerticalSlice.WebApi.Infrastructure.Authentication;
 /// </summary>
 /// <remarks>
 /// This implementation lives in WebApi because modules must not depend on
-/// HttpContext directly. In development, a stable fallback user keeps the local
-/// baseline runnable before the real authentication pipeline is introduced.
+/// HttpContext directly.
 /// </remarks>
-public sealed class CurrentUserContext(
-    IHttpContextAccessor httpContextAccessor,
-    IWebHostEnvironment environment) : ICurrentUserContext
+public sealed class CurrentUserContext(IHttpContextAccessor httpContextAccessor) : ICurrentUserContext
 {
     /// <inheritdoc />
-    public string UserId
-    {
-        get
-        {
-            var httpContext = httpContextAccessor.HttpContext;
-
-            var userId =
-                httpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier) ??
-                httpContext?.User.FindFirstValue("sub") ??
-                httpContext?.Request.Headers["X-Demo-UserId"].FirstOrDefault();
-
-            if (!string.IsNullOrWhiteSpace(userId))
-            {
-                return userId;
-            }
-
-            return environment.IsDevelopment() ? "demo-user" : string.Empty;
-        }
-    }
+    public string UserId =>
+        httpContextAccessor.HttpContext?.User.Identity?.IsAuthenticated is true
+            ? httpContextAccessor.HttpContext.User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+              httpContextAccessor.HttpContext.User.FindFirstValue("sub") ??
+              string.Empty
+            : string.Empty;
 }
