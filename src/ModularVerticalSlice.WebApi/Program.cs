@@ -28,6 +28,7 @@ builder.Host.UseWolverine(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddCorrelation();
+builder.Services.AddHealthChecks();
 builder.Services.AddWebApiAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddWebApiAuthorization();
 builder.Services.AddProblemDetails();
@@ -46,6 +47,9 @@ app.UseCorrelationId();
 app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health/live").AllowAnonymous();
+app.MapHealthChecks("/health/ready").AllowAnonymous();
 
 app.MapApplicationModules(modules);
 app.MapGet("/", () => Results.Text("ModularVerticalSlice.WebApi"));
