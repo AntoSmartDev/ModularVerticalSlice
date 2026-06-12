@@ -8,6 +8,8 @@ using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.WebApi.Infrastructure.Authentication;
 using ModularVerticalSlice.WebApi.Infrastructure.Observability;
 using ModularVerticalSlice.WebApi;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +31,19 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddCorrelation();
 builder.Services.AddHealthChecks();
+
+var serviceName = builder.Configuration["OpenTelemetry:ServiceName"] ?? builder.Environment.ApplicationName;
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService(serviceName))
+    .WithTracing(tracing =>
+    {
+        tracing.AddAspNetCoreInstrumentation();
+        if (builder.Environment.IsDevelopment())
+            tracing.AddConsoleExporter();
+        var otlpEndpoint = builder.Configuration["OpenTelemetry:Otlp:Endpoint"];
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+            tracing.AddOtlpExporter(otlp => otlp.Endpoint = new Uri(otlpEndpoint));
+    });
 builder.Services.AddWebApiAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddWebApiAuthorization();
 builder.Services.AddProblemDetails();
