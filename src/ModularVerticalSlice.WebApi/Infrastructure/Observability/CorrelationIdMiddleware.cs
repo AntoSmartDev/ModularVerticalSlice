@@ -1,3 +1,5 @@
+using ModularVerticalSlice.Application.Shared.Observability;
+
 namespace ModularVerticalSlice.WebApi.Infrastructure.Observability;
 
 internal sealed class CorrelationIdMiddleware
@@ -7,7 +9,10 @@ internal sealed class CorrelationIdMiddleware
 
     public CorrelationIdMiddleware(RequestDelegate next) => _next = next;
 
-    public async Task InvokeAsync(HttpContext context, CorrelationContext correlationContext)
+    public async Task InvokeAsync(
+        HttpContext context,
+        CorrelationContext correlationContext,
+        ILogger<CorrelationIdMiddleware> logger)
     {
         var correlationId = context.Request.Headers[HeaderName].FirstOrDefault()
             ?? context.TraceIdentifier;
@@ -20,6 +25,12 @@ internal sealed class CorrelationIdMiddleware
             return Task.CompletedTask;
         });
 
-        await _next(context);
+        using (logger.BeginScope(new Dictionary<string, object>
+        {
+            [CorrelationLoggingMiddleware.CorrelationIdKey] = correlationId
+        }))
+        {
+            await _next(context);
+        }
     }
 }

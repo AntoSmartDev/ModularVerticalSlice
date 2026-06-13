@@ -9,6 +9,7 @@ using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Notifications;
+using ModularVerticalSlice.Application.Shared.Observability;
 using ModularVerticalSlice.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -45,6 +46,7 @@ public static class ApplicationMessagingExtensions
         });
         options.UseRuntimeCompilation();
         options.Discovery.IncludeAssembly(typeof(BookingsModule).Assembly);
+        options.Policies.AddMiddleware(typeof(CorrelationLoggingMiddleware));
         options.Policies.AutoApplyTransactions();
         options.AddSagaType<BookingLifecycleSaga>("booking_lifecycle_sagas");
         PaymentsRuntimeRecoveryPolicies.Configure(options);

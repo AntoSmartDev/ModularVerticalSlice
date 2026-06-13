@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
@@ -262,7 +263,8 @@ public class PaymentProcessingBaselineTests
             db,
             new FakePaymentGateway(),
             bus,
-            new FixedTimeProvider(processedAt));
+            new FixedTimeProvider(processedAt),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
@@ -316,7 +318,8 @@ public class PaymentProcessingBaselineTests
             db,
             new FakePaymentGateway(),
             bus,
-            new FixedTimeProvider(processedAt));
+            new FixedTimeProvider(processedAt),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
@@ -358,7 +361,8 @@ public class PaymentProcessingBaselineTests
             db,
             new FakePaymentGateway(),
             bus,
-            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 20, 0, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 20, 0, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         db.Events.Add(new Event
         {
@@ -402,7 +406,8 @@ public class PaymentProcessingBaselineTests
             db,
             new FakePaymentGateway(),
             bus,
-            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 20, 10, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 20, 10, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         db.Events.Add(new Event
         {
@@ -456,7 +461,8 @@ public class PaymentProcessingBaselineTests
             db,
             new FakePaymentGateway(),
             businessBus,
-            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 0, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 0, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var businessResult = await businessHandler.HandleProcessPayment(
             new ProcessPaymentCommand(
@@ -487,7 +493,8 @@ public class PaymentProcessingBaselineTests
             technicalDb,
             new FakePaymentGateway(),
             technicalBus,
-            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 5, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 28, 21, 5, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             technicalHandler.HandleProcessPayment(
@@ -519,7 +526,8 @@ public class PaymentProcessingBaselineTests
             db,
             new FakePaymentGateway(),
             bus,
-            new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 22, 10, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 22, 10, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
@@ -542,7 +550,7 @@ public class PaymentProcessingBaselineTests
         await using var db = CreateDbContext();
         var bus = new TestMessageContext();
         var now = new DateTimeOffset(2026, 6, 13, 10, 0, 0, TimeSpan.Zero);
-        var handler = new PaymentProcessingHandler(db, new FakePaymentGateway(), bus, new FixedTimeProvider(now));
+        var handler = new PaymentProcessingHandler(db, new FakePaymentGateway(), bus, new FixedTimeProvider(now), NullLogger<PaymentProcessingHandler>.Instance);
 
         var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(Guid.NewGuid(), Guid.NewGuid(), "technical-failure-user", 1, now),
@@ -562,7 +570,7 @@ public class PaymentProcessingBaselineTests
         bus.WhenInvokedMessageOf<CheckBookingPaymentEligibilityQuery>()
             .RespondWith(Result.Failure(Error.Conflict("Bookings.BookingNotPayable", "Not payable.")));
         var now = new DateTimeOffset(2026, 6, 13, 10, 0, 0, TimeSpan.Zero);
-        var handler = new PaymentProcessingHandler(db, new FakePaymentGateway(), bus, new FixedTimeProvider(now));
+        var handler = new PaymentProcessingHandler(db, new FakePaymentGateway(), bus, new FixedTimeProvider(now), NullLogger<PaymentProcessingHandler>.Instance);
 
         var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(Guid.NewGuid(), Guid.NewGuid(), "technical-failure-user", 1, now.AddMinutes(1)),

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using ModularVerticalSlice.Application.Modules.Bookings;
@@ -284,7 +285,7 @@ public class BookingLifecycleApiBaselineTests
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var bus = new TestMessageContext();
-        var handler = new BookingLifecycleHandler(db, bus, new FixedTimeProvider(confirmedAt));
+        var handler = new BookingLifecycleHandler(db, bus, new FixedTimeProvider(confirmedAt), NullLogger<BookingLifecycleHandler>.Instance);
 
         var result = await handler.HandleConfirmBooking(new ConfirmBookingCommand(bookingId), TestContext.Current.CancellationToken);
 
@@ -1264,7 +1265,8 @@ public class BookingLifecycleApiBaselineTests
         new(
             db,
             bus ?? new TestMessageContext(),
-            timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero)));
+            timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 6, 11, 10, 0, 0, TimeSpan.Zero)),
+            NullLogger<BookingLifecycleHandler>.Instance);
 
     private sealed class FakeTicketReservation(Result result) : ITicketReservation
     {
