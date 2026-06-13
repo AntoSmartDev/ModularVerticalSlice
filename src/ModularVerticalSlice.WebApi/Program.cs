@@ -30,7 +30,7 @@ builder.Host.UseWolverine(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 builder.Services.AddCorrelation();
-builder.Services.AddHealthChecks();
+builder.Services.AddApplicationHealthChecks();
 
 var serviceName = builder.Configuration["OpenTelemetry:ServiceName"] ?? builder.Environment.ApplicationName;
 builder.Services.AddOpenTelemetry()
@@ -63,8 +63,7 @@ app.UseExceptionHandler();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health/live").AllowAnonymous();
-app.MapHealthChecks("/health/ready").AllowAnonymous();
+app.MapApplicationHealthEndpoints();
 
 app.MapApplicationModules(modules);
 app.MapGet("/", () => Results.Text("ModularVerticalSlice.WebApi"));
