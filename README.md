@@ -231,6 +231,11 @@ Hosted CI is optional automation, not a requirement for using or understanding t
 project. Any CI workflow should invoke this same public script so failures remain locally
 reproducible.
 
+The included [GitHub Actions workflow](.github/workflows/verify.yml) demonstrates that
+adapter: GitHub provides a clean Ubuntu runner and a disposable PostgreSQL service, then
+runs the same `./scripts/verify.ps1` command. It runs for pull requests targeting `main`,
+pushes to `main`, and manual starts from the GitHub Actions page.
+
 ---
 
 ## Architecture decisions
