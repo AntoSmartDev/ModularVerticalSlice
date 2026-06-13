@@ -185,10 +185,10 @@ gate; there is no advisory-only rule.
 
 ## Local setup
 
-Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download), Docker, and the
-[EF Core CLI tools](https://learn.microsoft.com/ef/core/cli/dotnet).
+Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download) and Docker.
 
 ```powershell
+dotnet tool restore
 docker compose up -d
 $env:ConnectionStrings__Database = "Host=localhost;Port=5432;Database=modularverticalslice;Username=postgres;Password=postgres"
 dotnet ef database update --project .\src\ModularVerticalSlice.Persistence
@@ -198,7 +198,7 @@ dotnet run --project .\src\ModularVerticalSlice.WebApi
 The development baseline uses the disposable PostgreSQL credentials from
 `docker-compose.yml`, pre-configured in `appsettings.Development.json`. The explicit
 environment variable is required by the design-time DbContext factory when applying EF
-Core migrations.
+Core migrations. The local .NET tool manifest pins `dotnet-ef 10.0.8`.
 
 For CI, production, and EF Core design-time commands, override via environment or
 a secret manager:
@@ -207,14 +207,34 @@ a secret manager:
 $env:ConnectionStrings__Database = "Host=localhost;Port=5432;Database=modularverticalslice;Username=<user>;Password=<password>"
 ```
 
-Run the complete verification baseline with:
+## Public verification
+
+The public PowerShell script is the primary verification contract. It restores
+dependencies, builds the solution, and runs unit, architecture, and integration tests:
 
 ```powershell
-dotnet build .\ModularVerticalSlice.slnx --no-restore
-dotnet test .\tests\ModularVerticalSlice.UnitTests\ModularVerticalSlice.UnitTests.csproj --no-build
-dotnet test .\tests\ModularVerticalSlice.IntegrationTests\ModularVerticalSlice.IntegrationTests.csproj --no-build
-dotnet test .\tests\ModularVerticalSlice.ArchitectureTests\ModularVerticalSlice.ArchitectureTests.csproj --no-build
+./scripts/verify.ps1
 ```
+
+PostgreSQL must already be available. To explicitly start the repository's disposable
+PostgreSQL service and wait for it before verification:
+
+```powershell
+./scripts/verify.ps1 -StartDatabase
+```
+
+The script never stops or removes containers. Integration tests apply their required
+migrations. For faster but incomplete feedback, use `-SkipIntegrationTests`; the script
+reports clearly that full verification was not performed.
+
+Hosted CI is optional automation, not a requirement for using or understanding the
+project. Any CI workflow should invoke this same public script so failures remain locally
+reproducible.
+
+The included [GitHub Actions workflow](.github/workflows/verify.yml) demonstrates that
+adapter: GitHub provides a clean Ubuntu runner and a disposable PostgreSQL service, then
+runs the same `./scripts/verify.ps1` command. It runs for pull requests targeting `main`,
+pushes to `main`, and manual starts from the GitHub Actions page.
 
 ---
 
