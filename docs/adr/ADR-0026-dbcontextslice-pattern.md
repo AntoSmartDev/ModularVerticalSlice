@@ -117,7 +117,7 @@ the cross-module compromises are easier to locate.
 
 ## Architecture enforcement
 
-The `AppDbContextGuardrailTests` (M11/F02) assert that no type in the Application
+The `AppDbContextGuardrailTests` assert that no type in the Application
 assembly depends on `AppDbContext` directly. Handlers must use their declared
 DbContextSlice interface. This guarantee is checked whenever the architecture test suite
 runs and should be enforced as a required CI gate.
