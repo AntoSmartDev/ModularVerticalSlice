@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
@@ -31,6 +31,7 @@ public sealed class ReserveTicketsHandler(ICatalogWriteDbContextSlice writeDb)
     /// processed by the Wolverine runtime; the <see cref="Result"/> member is returned to the caller.
     /// </remarks>
     [WolverineHandler]
+    [RetryNow(typeof(DbUpdateConcurrencyException), 1)]
     public async Task<(Result, IStorageAction<Event>)> HandleReserveTickets(
         ReserveTicketsCommand command,
         CancellationToken cancellationToken)

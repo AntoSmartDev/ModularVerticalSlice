@@ -13,6 +13,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
+using Wolverine.Attributes;
 using Wolverine.Persistence;
 using CreateEventSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent.CreateEventHandler;
 using GetEventDetailsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails.GetEventDetailsHandler;
@@ -27,6 +28,20 @@ namespace ModularVerticalSlice.UnitTests.Modules.Catalog;
 /// </summary>
 public class CatalogEventsApiBaselineTests
 {
+    [Fact]
+    public void Reservation_Concurrency_Retry_Should_Be_Scoped_To_ReserveTickets_Handler()
+    {
+        var reserveMethod = typeof(ReserveTicketsSliceHandler)
+            .GetMethod(nameof(ReserveTicketsSliceHandler.HandleReserveTickets));
+        var createMethod = typeof(CreateEventSliceHandler)
+            .GetMethod(nameof(CreateEventSliceHandler.HandleCreateEvent));
+
+        Assert.NotNull(reserveMethod);
+        Assert.NotNull(createMethod);
+        Assert.Single(reserveMethod.GetCustomAttributes(typeof(RetryNowAttribute), inherit: false));
+        Assert.Empty(createMethod.GetCustomAttributes(typeof(RetryNowAttribute), inherit: false));
+    }
+
     /// <summary>
     /// Verifies that event creation adds a new entity to the write-side DbSet.
     /// </summary>

@@ -38,6 +38,11 @@ public sealed class Event
     public int AvailableTickets { get; set; }
 
     /// <summary>
+    /// Gets or sets the PostgreSQL transaction row version used for optimistic concurrency.
+    /// </summary>
+    public uint Version { get; set; }
+
+    /// <summary>
     /// Reserves the requested quantity of tickets from the current availability.
     /// </summary>
     public Result ReserveTickets(int requestedQuantity)
