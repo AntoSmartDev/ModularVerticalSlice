@@ -6,7 +6,10 @@ namespace ModularVerticalSlice.ArchitectureTests;
 
 /// <summary>
 /// Modules must not reference each other's internal namespaces directly.
-/// Cross-module communication is allowed only via the public Messages namespace.
+/// Cross-module communication is allowed only via the public Messages and
+/// Contracts namespaces. Same-store read-composition exceptions remain explicit
+/// and local to dedicated Persistence slices, so Persistence is guarded on
+/// feature/runtime code rather than blocked indiscriminately at module scope.
 /// </summary>
 public sealed class ProjectBoundaryTests
 {
@@ -76,6 +79,91 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Catalog.Domain",
                 "ModularVerticalSlice.Application.Modules.Payments.Features",
                 "ModularVerticalSlice.Application.Modules.Payments.Domain")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, FormatViolations(result));
+    }
+
+    [Fact]
+    public void Bookings_CreateBooking_Does_Not_Depend_On_Other_Module_Persistence()
+    {
+        var result = Types.InAssembly(ApplicationAssembly)
+            .That().ResideInNamespace("ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking")
+            .ShouldNot().HaveDependencyOnAny(
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence",
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, FormatViolations(result));
+    }
+
+    [Fact]
+    public void Bookings_BookingLifecycle_Does_Not_Depend_On_Other_Module_Persistence()
+    {
+        var result = Types.InAssembly(ApplicationAssembly)
+            .That().ResideInNamespace("ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle")
+            .ShouldNot().HaveDependencyOnAny(
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence",
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, FormatViolations(result));
+    }
+
+    [Fact]
+    public void Catalog_Features_Do_Not_Depend_On_Other_Module_Persistence()
+    {
+        var result = Types.InAssembly(ApplicationAssembly)
+            .That().ResideInNamespace("ModularVerticalSlice.Application.Modules.Catalog.Features")
+            .ShouldNot().HaveDependencyOnAny(
+                "ModularVerticalSlice.Application.Modules.Bookings.Persistence",
+                "ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, FormatViolations(result));
+    }
+
+    [Fact]
+    public void Payments_Features_Do_Not_Depend_On_Other_Module_Persistence()
+    {
+        var result = Types.InAssembly(ApplicationAssembly)
+            .That().ResideInNamespace("ModularVerticalSlice.Application.Modules.Payments.Features")
+            .ShouldNot().HaveDependencyOnAny(
+                "ModularVerticalSlice.Application.Modules.Bookings.Persistence",
+                "ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence",
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
+                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+            .GetResult();
+
+        Assert.True(result.IsSuccessful, FormatViolations(result));
+    }
+
+    [Fact]
+    public void Notifications_Features_Do_Not_Depend_On_Other_Module_Persistence()
+    {
+        var result = Types.InAssembly(ApplicationAssembly)
+            .That().ResideInNamespace("ModularVerticalSlice.Application.Modules.Notifications.Features")
+            .ShouldNot().HaveDependencyOnAny(
+                "ModularVerticalSlice.Application.Modules.Bookings.Persistence",
+                "ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence",
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence",
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));

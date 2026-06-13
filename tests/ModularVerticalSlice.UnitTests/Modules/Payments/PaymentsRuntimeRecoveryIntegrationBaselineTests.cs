@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
@@ -35,7 +36,6 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
-            db,
             db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),
@@ -83,7 +83,6 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 5, 0, TimeSpan.Zero)));
@@ -129,7 +128,6 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
             bus,
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 10, 0, TimeSpan.Zero)));
@@ -168,7 +166,6 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
-            db,
             db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),
@@ -221,6 +218,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
         var bus = new TestMessageContext();
         bus.WhenInvokedMessageOf<CheckBookingPaymentEligibilityQuery>()
             .RespondWith(Result.Success());
+        bus.WhenInvokedMessageOf<GetEventTicketPriceQuery>()
+            .RespondWith(Result.Success(20m));
         return bus;
     }
 
@@ -241,7 +240,6 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var handler = new PaymentProcessingHandler(
-            db,
             db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),

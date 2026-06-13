@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -48,6 +48,29 @@ public sealed class GetEventDetailsHandler(ICatalogReadDbContextSlice readDb)
         }
 
         return eventDetails;
+    }
+
+    /// <summary>
+    /// Returns the current ticket price of a single catalog event.
+    /// </summary>
+    [WolverineHandler]
+    public async Task<Result<decimal>> HandleGetEventTicketPrice(
+        GetEventTicketPriceQuery query,
+        CancellationToken cancellationToken)
+    {
+        var ticketPrice = await readDb.Events
+            .Where(x => x.Id == query.EventId)
+            .Select(x => (decimal?)x.TicketPrice)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        if (ticketPrice is null)
+        {
+            return Error.NotFound(
+                "Catalog.EventNotFound",
+                "The requested event was not found.");
+        }
+
+        return ticketPrice.Value;
     }
 }
 
