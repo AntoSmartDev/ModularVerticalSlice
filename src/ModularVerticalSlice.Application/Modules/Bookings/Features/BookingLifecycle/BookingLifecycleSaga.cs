@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
@@ -94,7 +94,7 @@ public sealed class BookingLifecycleSaga : Saga
     public async Task<Result> Handle(
         [SagaIdentityFrom(nameof(PaymentSucceededEvent.BookingId))]
         PaymentSucceededEvent message,
-        IBookingReadDbContext readDb,
+        IBookingReadDbContextSlice readDb,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -124,7 +124,7 @@ public sealed class BookingLifecycleSaga : Saga
     public async Task<Result> Handle(
         [SagaIdentityFrom(nameof(PaymentFailedEvent.BookingId))]
         PaymentFailedEvent message,
-        IBookingReadDbContext readDb,
+        IBookingReadDbContextSlice readDb,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
         await HandleCompensationAsync(
@@ -140,7 +140,7 @@ public sealed class BookingLifecycleSaga : Saga
     public async Task<Result> Handle(
         [SagaIdentityFrom(nameof(BookingPaymentTimeoutExpiredEvent.BookingId))]
         BookingPaymentTimeoutExpiredEvent message,
-        IBookingReadDbContext readDb,
+        IBookingReadDbContextSlice readDb,
         IMessageBus bus,
         CancellationToken cancellationToken) =>
         await HandleCompensationAsync(
@@ -171,7 +171,7 @@ public sealed class BookingLifecycleSaga : Saga
     private async Task<Result> HandleCompensationAsync(
         Guid bookingId,
         object transitionCommand,
-        IBookingReadDbContext readDb,
+        IBookingReadDbContextSlice readDb,
         IMessageBus bus,
         CancellationToken cancellationToken)
     {
@@ -212,7 +212,7 @@ public sealed class BookingLifecycleSaga : Saga
 
     private static async Task<Result<bool>> EnsureBookingIsPendingAsync(
         Guid bookingId,
-        IBookingReadDbContext readDb,
+        IBookingReadDbContextSlice readDb,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(readDb);

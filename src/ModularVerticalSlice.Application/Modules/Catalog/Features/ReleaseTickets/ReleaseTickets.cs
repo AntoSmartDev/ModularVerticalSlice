@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
@@ -11,9 +11,9 @@ namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTicke
 /// <summary>
 /// Handles ticket release for a specific catalog event.
 /// </summary>
-public sealed class ReleaseTicketsHandler(ICatalogWriteDbContext writeDb)
+public sealed class ReleaseTicketsHandler(ICatalogWriteDbContextSlice writeDb)
 {
-    private readonly ICatalogWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
+    private readonly ICatalogWriteDbContextSlice _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
 
     /// <summary>
     /// Releases tickets back to an existing catalog event.

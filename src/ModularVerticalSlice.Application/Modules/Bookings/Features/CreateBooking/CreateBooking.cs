@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -78,7 +78,7 @@ internal static class CreateBookingValidator
 /// Handles the creation of a baseline pending booking.
 /// </summary>
 public sealed class CreateBookingHandler(
-    IBookingWriteDbContext writeDb,
+    IBookingWriteDbContextSlice writeDb,
     IMessageBus bus,
     ICurrentUserContext currentUserContext,
     TimeProvider timeProvider)

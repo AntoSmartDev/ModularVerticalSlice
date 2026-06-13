@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
@@ -20,8 +20,8 @@ namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProc
 /// semantics without conflating them with business outcomes.
 /// </remarks>
 public sealed class PaymentProcessingHandler(
-    IPaymentWriteDbContext writeDb,
-    ICatalogReadDbContext catalogReadDb,
+    IPaymentWriteDbContextSlice writeDb,
+    ICatalogReadDbContextSlice catalogReadDb,
     IPaymentGateway paymentGateway,
     IMessageBus bus,
     TimeProvider timeProvider)

@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -21,7 +21,7 @@ public sealed record GetEventDetailsQuery(Guid EventId);
 /// <summary>
 /// Handles the query that returns the details of a single event.
 /// </summary>
-public sealed class GetEventDetailsHandler(ICatalogReadDbContext readDb)
+public sealed class GetEventDetailsHandler(ICatalogReadDbContextSlice readDb)
 {
     /// <summary>
     /// Returns the details of a single catalog event.

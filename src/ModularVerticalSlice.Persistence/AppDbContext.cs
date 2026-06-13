@@ -12,18 +12,18 @@ namespace ModularVerticalSlice.Persistence;
 /// Represents the concrete EF Core database context for the application.
 /// </summary>
 /// <remarks>
-/// This context lives in the Persistence project so modules depend only on constrained
-/// mini DbContext abstractions rather than the full EF Core composition surface.
+/// This context lives in the Persistence project so modules depend only on their
+/// DbContextSlice interfaces rather than the full EF Core composition surface.
 /// </remarks>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
     DbContext(options),
-    IBookingCatalogReadDbContext,
-    IBookingReadDbContext,
-    IBookingWriteDbContext,
-    ICatalogReadDbContext,
-    ICatalogWriteDbContext,
-    IPaymentReadDbContext,
-    IPaymentWriteDbContext
+    IBookingCatalogReadDbContextSlice,
+    IBookingReadDbContextSlice,
+    IBookingWriteDbContextSlice,
+    ICatalogReadDbContextSlice,
+    ICatalogWriteDbContextSlice,
+    IPaymentReadDbContextSlice,
+    IPaymentWriteDbContextSlice
 {
     /// <summary>
     /// Gets the mutable catalog events set.
@@ -48,13 +48,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) :
         base.OnModelCreating(modelBuilder);
     }
 
-    IQueryable<Event> ICatalogReadDbContext.Events => Set<Event>().AsNoTracking();
+    IQueryable<Event> ICatalogReadDbContextSlice.Events => Set<Event>().AsNoTracking();
 
-    IQueryable<Booking> IBookingReadDbContext.Bookings => Set<Booking>().AsNoTracking();
+    IQueryable<Booking> IBookingReadDbContextSlice.Bookings => Set<Booking>().AsNoTracking();
 
-    IQueryable<Booking> IBookingCatalogReadDbContext.Bookings => Set<Booking>().AsNoTracking();
+    IQueryable<Booking> IBookingCatalogReadDbContextSlice.Bookings => Set<Booking>().AsNoTracking();
 
-    IQueryable<Event> IBookingCatalogReadDbContext.Events => Set<Event>().AsNoTracking();
+    IQueryable<Event> IBookingCatalogReadDbContextSlice.Events => Set<Event>().AsNoTracking();
 
-    IQueryable<Payment> IPaymentReadDbContext.Payments => Set<Payment>().AsNoTracking();
+    IQueryable<Payment> IPaymentReadDbContextSlice.Payments => Set<Payment>().AsNoTracking();
 }

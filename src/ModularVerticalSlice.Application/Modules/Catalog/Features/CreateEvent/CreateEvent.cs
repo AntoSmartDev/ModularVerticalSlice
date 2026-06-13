@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -60,7 +60,7 @@ internal static class CreateEventValidator
 /// <summary>
 /// Handles event creation in the local Catalog module flow.
 /// </summary>
-public sealed class CreateEventHandler(ICatalogWriteDbContext writeDb)
+public sealed class CreateEventHandler(ICatalogWriteDbContextSlice writeDb)
 {
     /// <summary>
     /// Creates a new catalog event in the write-side persistence boundary.

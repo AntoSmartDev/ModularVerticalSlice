@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -21,7 +21,7 @@ public sealed record GetUpcomingEventsQuery;
 /// Handles the query that returns the list of upcoming events.
 /// </summary>
 public sealed class GetUpcomingEventsHandler(
-    ICatalogReadDbContext readDb,
+    ICatalogReadDbContextSlice readDb,
     TimeProvider timeProvider)
 {
     /// <summary>

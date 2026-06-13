@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
@@ -11,9 +11,9 @@ namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTicke
 /// <summary>
 /// Handles ticket reservation for a specific catalog event.
 /// </summary>
-public sealed class ReserveTicketsHandler(ICatalogWriteDbContext writeDb)
+public sealed class ReserveTicketsHandler(ICatalogWriteDbContextSlice writeDb)
 {
-    private readonly ICatalogWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
+    private readonly ICatalogWriteDbContextSlice _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
 
     /// <summary>
     /// Reserves tickets for an existing catalog event.
