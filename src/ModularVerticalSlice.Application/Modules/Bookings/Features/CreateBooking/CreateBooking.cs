@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Contracts;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.Application.Shared.Security;
@@ -83,6 +84,7 @@ internal static class CreateBookingValidator
 /// </summary>
 public sealed class CreateBookingHandler(
     IBookingWriteDbContextSlice writeDb,
+    ITicketReservation ticketReservation,
     IMessageBus bus,
     ICurrentUserContext currentUserContext,
     TimeProvider timeProvider) : IHandlerConfiguration
@@ -92,6 +94,10 @@ public sealed class CreateBookingHandler(
     /// </summary>
     public static void Configure(HandlerChain chain)
     {
+        chain
+            .OnException<DbUpdateConcurrencyException>()
+            .RetryOnce();
+
         chain
             .OnException(
                 IsIdempotencyConstraintViolation,
@@ -105,8 +111,7 @@ public sealed class CreateBookingHandler(
     [WolverineHandler]
     public async Task<Result<Guid>> HandleCreateBooking(
         CreateBookingCommand command,
-        CancellationToken cancellationToken,
-        Envelope? envelope = null)
+        CancellationToken cancellationToken)
     {
         var validation = CreateBookingValidator.Validate(command);
         if (validation.IsFailure)
@@ -129,23 +134,6 @@ public sealed class CreateBookingHandler(
 
         if (existingBooking is not null)
         {
-            // A concurrent losing attempt has already committed its nested Catalog reservation.
-            // Compensate only Wolverine retries; ordinary sequential duplicates reserved nothing.
-            if (envelope?.Attempts > 0)
-            {
-                var releaseResult = await bus.InvokeAsync<Result>(
-                    new ReleaseTicketsCommand(
-                        command.EventId,
-                        command.Quantity,
-                        existingBooking.Id),
-                    cancellationToken);
-
-                if (releaseResult.IsFailure)
-                {
-                    return Result.Failure<Guid>(releaseResult.Error);
-                }
-            }
-
             return existingBooking.Id;
         }
 
@@ -160,11 +148,10 @@ public sealed class CreateBookingHandler(
             CreatedAt = timeProvider.GetUtcNow()
         };
 
-        var reserveTicketsResult = await bus.InvokeAsync<Result>(
-            new ReserveTicketsCommand(
-                command.EventId,
-                command.Quantity,
-                booking.Id),
+        var reserveTicketsResult = await ticketReservation.ReserveAsync(
+            command.EventId,
+            command.Quantity,
+            booking.Id,
             cancellationToken);
 
         if (reserveTicketsResult.IsFailure)

@@ -86,10 +86,14 @@ composition), a dedicated composite slice is declared — `IBookingCatalogReadDb
 — and its existence is documented, visible, and testable. There is no silent coupling.
 
 This is a deliberate pragmatic escape hatch, not a rejection of module boundaries.
-Commands, events, asynchronous workflows, and write-side coordination still cross
-modules through messages. Same-store read composition may use a dedicated composite
-slice when one projected relational query is clearer and more efficient than introducing
-premature replication or remote calls.
+Commands, events, asynchronous workflows, and independently committed write-side
+coordination still cross modules through messages. A same-process write that must share
+the caller's local transaction may instead use an explicit owning-module in-process
+contract. That contract operates through the owning module's slice without saving
+independently; it is a deliberate local-transaction choice and must be redesigned if the
+process or database boundary changes. Same-store read composition may use a dedicated
+composite slice when one projected relational query is clearer and more efficient than
+introducing premature replication or remote calls.
 
 The explicit query surface also helps control a common EF Core N+1 failure mode. The
 current composed Bookings queries join and project the required data in one SQL query

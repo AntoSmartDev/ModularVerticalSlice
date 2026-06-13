@@ -46,6 +46,7 @@ public sealed class CatalogConcurrencyIntegrationTests
         var booking = Assert.Single(bookings);
         Assert.Equal(success.Value, booking.Id);
         Assert.Equal(1, booking.Quantity);
+        Assert.True(interceptor.DistinctDbContextCount >= 3);
     }
 
     private static async Task<IHost> StartHostAsync(SynchronizeEventReadsInterceptor interceptor)
@@ -133,6 +134,19 @@ public sealed class CatalogConcurrencyIntegrationTests
         private readonly TaskCompletionSource _bothReadsStarted =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _matchingReads;
+        private readonly HashSet<Guid> _dbContextIds = [];
+        private readonly Lock _lock = new();
+
+        public int DistinctDbContextCount
+        {
+            get
+            {
+                lock (_lock)
+                {
+                    return _dbContextIds.Count;
+                }
+            }
+        }
 
         public override async ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
             DbCommand command,
@@ -142,6 +156,14 @@ public sealed class CatalogConcurrencyIntegrationTests
         {
             if (IsTargetEventRead(command))
             {
+                lock (_lock)
+                {
+                    if (eventData.Context is not null)
+                    {
+                        _dbContextIds.Add(eventData.Context.ContextId.InstanceId);
+                    }
+                }
+
                 if (Interlocked.Increment(ref _matchingReads) == 2)
                 {
                     _bothReadsStarted.TrySetResult();

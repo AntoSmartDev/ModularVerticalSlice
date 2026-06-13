@@ -6,6 +6,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
+using ModularVerticalSlice.Application.Modules.Catalog.Contracts;
 using ModularVerticalSlice.Application.Shared.Modules;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog;
@@ -26,7 +27,7 @@ public sealed class CatalogModule : IModule
         services.AddScoped<CreateEventHandler>();
         services.AddScoped<GetUpcomingEventsHandler>();
         services.AddScoped<GetEventDetailsHandler>();
-        services.AddScoped<ReserveTicketsHandler>();
+        services.AddScoped<ITicketReservation, TicketReservation>();
         services.AddScoped<ReleaseTicketsHandler>();
     }
 

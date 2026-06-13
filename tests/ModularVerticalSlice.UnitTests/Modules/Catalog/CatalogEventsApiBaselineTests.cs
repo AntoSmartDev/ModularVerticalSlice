@@ -13,13 +13,12 @@ using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
-using Wolverine.Attributes;
 using Wolverine.Persistence;
 using CreateEventSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent.CreateEventHandler;
 using GetEventDetailsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails.GetEventDetailsHandler;
 using GetUpcomingEventsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents.GetUpcomingEventsHandler;
 using ReleaseTicketsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets.ReleaseTicketsHandler;
-using ReserveTicketsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets.ReserveTicketsHandler;
+using TicketReservation = ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets.TicketReservation;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Catalog;
 
@@ -28,20 +27,6 @@ namespace ModularVerticalSlice.UnitTests.Modules.Catalog;
 /// </summary>
 public class CatalogEventsApiBaselineTests
 {
-    [Fact]
-    public void Reservation_Concurrency_Retry_Should_Be_Scoped_To_ReserveTickets_Handler()
-    {
-        var reserveMethod = typeof(ReserveTicketsSliceHandler)
-            .GetMethod(nameof(ReserveTicketsSliceHandler.HandleReserveTickets));
-        var createMethod = typeof(CreateEventSliceHandler)
-            .GetMethod(nameof(CreateEventSliceHandler.HandleCreateEvent));
-
-        Assert.NotNull(reserveMethod);
-        Assert.NotNull(createMethod);
-        Assert.Single(reserveMethod.GetCustomAttributes(typeof(RetryNowAttribute), inherit: false));
-        Assert.Empty(createMethod.GetCustomAttributes(typeof(RetryNowAttribute), inherit: false));
-    }
-
     /// <summary>
     /// Verifies that event creation adds a new entity to the write-side DbSet.
     /// </summary>
@@ -134,14 +119,15 @@ public class CatalogEventsApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = CreateReserveTicketsHandler(db);
+        var reservation = new TicketReservation(db);
 
-        var (result, storageAction) = await handler.HandleReserveTickets(
-            new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
+        var result = await reservation.ReserveAsync(
+            eventId,
+            2,
+            Guid.NewGuid(),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
-        Assert.IsType<Update<Event>>(storageAction);
         Assert.Equal(8, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
@@ -164,16 +150,17 @@ public class CatalogEventsApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = CreateReserveTicketsHandler(db);
+        var reservation = new TicketReservation(db);
 
-        var (result, storageAction) = await handler.HandleReserveTickets(
-            new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
+        var result = await reservation.ReserveAsync(
+            eventId,
+            2,
+            Guid.NewGuid(),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
         Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
-        Assert.IsType<Nothing<Event>>(storageAction);
         Assert.Equal(1, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
@@ -273,8 +260,6 @@ public class CatalogEventsApiBaselineTests
             timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
 
     private static GetEventDetailsSliceHandler CreateGetEventDetailsHandler(AppDbContext db) => new(db);
-
-    private static ReserveTicketsSliceHandler CreateReserveTicketsHandler(AppDbContext db) => new(db);
 
     private static ReleaseTicketsSliceHandler CreateReleaseTicketsHandler(AppDbContext db) => new(db);
 
