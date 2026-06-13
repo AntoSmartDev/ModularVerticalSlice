@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
@@ -17,8 +17,8 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 /// loaded and tracked by the write DbContext, so the mutation is committed by
 /// <c>AutoApplyTransactions()</c>; an explicit <c>Storage.Update</c> would be functionally
 /// redundant and only add tuple noise across three handlers and the shared helper, without any
-/// correctness or transactional gain. Storage Operations are kept where they read naturally
-/// (the Catalog <c>ReserveTickets</c>/<c>ReleaseTickets</c> pair) instead of applied uniformly.
+/// correctness or transactional gain. Storage Operations remain on the asynchronous Catalog
+/// <c>ReleaseTickets</c> compensation, where the handler owns an independent transaction.
 /// </remarks>
 public sealed class BookingLifecycleHandler(
     IBookingWriteDbContextSlice writeDb,

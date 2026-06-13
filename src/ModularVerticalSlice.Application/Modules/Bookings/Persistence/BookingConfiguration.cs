@@ -13,6 +13,11 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 /// </remarks>
 public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
 {
+    /// <summary>
+    /// Identifies the authoritative database constraint for booking idempotency.
+    /// </summary>
+    public const string IdempotencyConstraintName = "IX_bookings_UserId_ClientRequestId";
+
     /// <inheritdoc />
     public void Configure(EntityTypeBuilder<Booking> builder)
     {
@@ -27,6 +32,7 @@ public sealed class BookingConfiguration : IEntityTypeConfiguration<Booking>
         builder.HasIndex(x => x.EventId);
 
         builder.HasIndex(x => new { x.UserId, x.ClientRequestId })
+            .HasDatabaseName(IdempotencyConstraintName)
             .IsUnique();
 
         builder.Property(x => x.EventId)

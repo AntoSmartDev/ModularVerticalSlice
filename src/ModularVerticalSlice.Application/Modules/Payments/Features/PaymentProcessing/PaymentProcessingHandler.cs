@@ -1,5 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
@@ -21,7 +22,6 @@ namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProc
 /// </remarks>
 public sealed class PaymentProcessingHandler(
     IPaymentWriteDbContextSlice writeDb,
-    ICatalogReadDbContextSlice catalogReadDb,
     IPaymentGateway paymentGateway,
     IMessageBus bus,
     TimeProvider timeProvider)
@@ -40,17 +40,30 @@ public sealed class PaymentProcessingHandler(
             return validation;
         }
 
-        var ticketPrice = await catalogReadDb.Events
-            .Where(x => x.Id == command.EventId)
-            .Select(x => (decimal?)x.TicketPrice)
-            .SingleOrDefaultAsync(cancellationToken);
-
-        if (ticketPrice is null)
+        if (timeProvider.GetUtcNow() >= command.PaymentDeadline)
         {
             return Result.Failure(
-                Error.NotFound(
-                    "Catalog.EventNotFound",
-                    "The target event was not found for payment processing."));
+                Error.Conflict(
+                    "Payments.PaymentWindowExpired",
+                    "The booking payment window has elapsed."));
+        }
+
+        var eligibility = await bus.InvokeAsync<Result>(
+            new CheckBookingPaymentEligibilityQuery(command.BookingId),
+            cancellationToken);
+
+        if (eligibility.IsFailure)
+        {
+            return eligibility;
+        }
+
+        var ticketPrice = await bus.InvokeAsync<Result<decimal>>(
+            new GetEventTicketPriceQuery(command.EventId),
+            cancellationToken);
+
+        if (ticketPrice.IsFailure)
+        {
+            return Result.Failure(ticketPrice.Error);
         }
 
         var outcome = paymentGateway.Process(command.UserId, command.Quantity);

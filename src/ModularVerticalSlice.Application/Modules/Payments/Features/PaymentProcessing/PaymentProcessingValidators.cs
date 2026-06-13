@@ -45,6 +45,14 @@ public static class PaymentProcessingValidators
                     "A payment owner is required."));
         }
 
+        if (command.PaymentDeadline == default)
+        {
+            return Result.Failure(
+                Error.Validation(
+                    "Payments.InvalidPaymentDeadline",
+                    "A valid payment deadline is required."));
+        }
+
         return Result.Success();
     }
 }

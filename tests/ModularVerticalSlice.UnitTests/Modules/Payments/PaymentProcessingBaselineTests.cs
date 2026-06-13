@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
+using ModularVerticalSlice.SharedKernel;
 using Wolverine;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Payments;
@@ -240,7 +243,7 @@ public class PaymentProcessingBaselineTests
     public async Task ProcessPayment_Should_Persist_Succeeded_Payment_And_Publish_Success_Event()
     {
         await using var db = CreateDbContext();
-        var bus = new TestMessageContext();
+        var bus = CreateEligibleMessageBus(49.90m);
         var eventId = Guid.NewGuid();
         var bookingId = Guid.NewGuid();
         var processedAt = new DateTimeOffset(2026, 5, 23, 22, 0, 0, TimeSpan.Zero);
@@ -257,7 +260,6 @@ public class PaymentProcessingBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
             bus,
             new FixedTimeProvider(processedAt));
@@ -267,7 +269,8 @@ public class PaymentProcessingBaselineTests
                 bookingId,
                 eventId,
                 "user-1",
-                2),
+                2,
+                DateTimeOffset.MaxValue),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
@@ -294,7 +297,7 @@ public class PaymentProcessingBaselineTests
     public async Task ProcessPayment_Should_Persist_Failed_Payment_And_Publish_Failure_Event()
     {
         await using var db = CreateDbContext();
-        var bus = new TestMessageContext();
+        var bus = CreateEligibleMessageBus();
         var eventId = Guid.NewGuid();
         var bookingId = Guid.NewGuid();
         var processedAt = new DateTimeOffset(2026, 5, 23, 22, 5, 0, TimeSpan.Zero);
@@ -311,7 +314,6 @@ public class PaymentProcessingBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
             bus,
             new FixedTimeProvider(processedAt));
@@ -321,7 +323,8 @@ public class PaymentProcessingBaselineTests
                 bookingId,
                 eventId,
                 "declined-user",
-                3),
+                3,
+                DateTimeOffset.MaxValue),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
@@ -348,11 +351,10 @@ public class PaymentProcessingBaselineTests
     public async Task ProcessPayment_Should_Throw_Dedicated_Technical_Failure_Without_Persisting_Or_Publishing()
     {
         await using var db = CreateDbContext();
-        var bus = new TestMessageContext();
+        var bus = CreateEligibleMessageBus();
         var eventId = Guid.NewGuid();
         var bookingId = Guid.NewGuid();
         var handler = new PaymentProcessingHandler(
-            db,
             db,
             new FakePaymentGateway(),
             bus,
@@ -374,7 +376,8 @@ public class PaymentProcessingBaselineTests
                     bookingId,
                     eventId,
                     "technical-failure-user",
-                    1),
+                    1,
+                DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
         Assert.Equal("Payment provider is temporarily unavailable.", exception.Message);
@@ -392,11 +395,10 @@ public class PaymentProcessingBaselineTests
     public async Task ProcessPayment_Should_Throw_NonRetriable_Technical_Failure_With_Explicit_Shape()
     {
         await using var db = CreateDbContext();
-        var bus = new TestMessageContext();
+        var bus = CreateEligibleMessageBus();
         var eventId = Guid.NewGuid();
         var bookingId = Guid.NewGuid();
         var handler = new PaymentProcessingHandler(
-            db,
             db,
             new FakePaymentGateway(),
             bus,
@@ -418,7 +420,8 @@ public class PaymentProcessingBaselineTests
                     bookingId,
                     eventId,
                     "technical-terminal-user",
-                    1),
+                    1,
+                DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
         Assert.Equal("Payment provider rejected the request as non-retriable.", exception.Message);
@@ -448,9 +451,8 @@ public class PaymentProcessingBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var businessBus = new TestMessageContext();
+        var businessBus = CreateEligibleMessageBus();
         var businessHandler = new PaymentProcessingHandler(
-            db,
             db,
             new FakePaymentGateway(),
             businessBus,
@@ -461,7 +463,8 @@ public class PaymentProcessingBaselineTests
                 Guid.NewGuid(),
                 eventId,
                 "declined-user",
-                1),
+                1,
+                DateTimeOffset.MaxValue),
             TestContext.Current.CancellationToken);
 
         Assert.True(businessResult.IsSuccess);
@@ -479,9 +482,8 @@ public class PaymentProcessingBaselineTests
         });
         await technicalDb.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var technicalBus = new TestMessageContext();
+        var technicalBus = CreateEligibleMessageBus();
         var technicalHandler = new PaymentProcessingHandler(
-            technicalDb,
             technicalDb,
             new FakePaymentGateway(),
             technicalBus,
@@ -493,7 +495,8 @@ public class PaymentProcessingBaselineTests
                     Guid.NewGuid(),
                     eventId,
                     "technical-failure-user",
-                    1),
+                    1,
+                DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
         Assert.Empty(technicalBus.Published);
@@ -508,8 +511,11 @@ public class PaymentProcessingBaselineTests
     {
         await using var db = CreateDbContext();
         var bus = new TestMessageContext();
+        bus.WhenInvokedMessageOf<CheckBookingPaymentEligibilityQuery>()
+            .RespondWith(Result.Success());
+        bus.WhenInvokedMessageOf<GetEventTicketPriceQuery>()
+            .RespondWith(Result.Failure<decimal>(Error.NotFound("Catalog.EventNotFound", "Missing.")));
         var handler = new PaymentProcessingHandler(
-            db,
             db,
             new FakePaymentGateway(),
             bus,
@@ -520,11 +526,50 @@ public class PaymentProcessingBaselineTests
                 Guid.NewGuid(),
                 Guid.NewGuid(),
                 "user-1",
-                1),
+                1,
+                DateTimeOffset.MaxValue),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal("Catalog.EventNotFound", result.Error.Code);
+        Assert.Empty(db.ChangeTracker.Entries<Payment>());
+        Assert.Empty(bus.Published);
+    }
+
+    [Fact]
+    public async Task ProcessPayment_Should_Reject_Elapsed_Deadline_Before_Eligibility_Or_Side_Effects()
+    {
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+        var now = new DateTimeOffset(2026, 6, 13, 10, 0, 0, TimeSpan.Zero);
+        var handler = new PaymentProcessingHandler(db, new FakePaymentGateway(), bus, new FixedTimeProvider(now));
+
+        var result = await handler.HandleProcessPayment(
+            new ProcessPaymentCommand(Guid.NewGuid(), Guid.NewGuid(), "technical-failure-user", 1, now),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Payments.PaymentWindowExpired", result.Error.Code);
+        Assert.Empty(db.ChangeTracker.Entries<Payment>());
+        Assert.Empty(bus.Published);
+    }
+
+    [Fact]
+    public async Task ProcessPayment_Should_Propagate_Bookings_Ineligibility_Before_Side_Effects()
+    {
+        await using var db = CreateDbContext();
+        var bus = new TestMessageContext();
+        bus.WhenInvokedMessageOf<CheckBookingPaymentEligibilityQuery>()
+            .RespondWith(Result.Failure(Error.Conflict("Bookings.BookingNotPayable", "Not payable.")));
+        var now = new DateTimeOffset(2026, 6, 13, 10, 0, 0, TimeSpan.Zero);
+        var handler = new PaymentProcessingHandler(db, new FakePaymentGateway(), bus, new FixedTimeProvider(now));
+
+        var result = await handler.HandleProcessPayment(
+            new ProcessPaymentCommand(Guid.NewGuid(), Guid.NewGuid(), "technical-failure-user", 1, now.AddMinutes(1)),
+            TestContext.Current.CancellationToken);
+
+        Assert.True(result.IsFailure);
+        Assert.Equal("Bookings.BookingNotPayable", result.Error.Code);
         Assert.Empty(db.ChangeTracker.Entries<Payment>());
         Assert.Empty(bus.Published);
     }
@@ -536,6 +581,16 @@ public class PaymentProcessingBaselineTests
             .Options;
 
         return new AppDbContext(options);
+    }
+
+    private static TestMessageContext CreateEligibleMessageBus(decimal ticketPrice = 20m)
+    {
+        var bus = new TestMessageContext();
+        bus.WhenInvokedMessageOf<CheckBookingPaymentEligibilityQuery>()
+            .RespondWith(Result.Success());
+        bus.WhenInvokedMessageOf<GetEventTicketPriceQuery>()
+            .RespondWith(Result.Success(ticketPrice));
+        return bus;
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider

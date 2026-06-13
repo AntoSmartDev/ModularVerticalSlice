@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -6,12 +6,17 @@ using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
+using ModularVerticalSlice.Application.Modules.Catalog.Contracts;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
+using Npgsql;
 using Wolverine;
 using Wolverine.Attributes;
+using Wolverine.Configuration;
+using Wolverine.ErrorHandling;
+using Wolverine.Runtime.Handlers;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 
@@ -79,10 +84,27 @@ internal static class CreateBookingValidator
 /// </summary>
 public sealed class CreateBookingHandler(
     IBookingWriteDbContextSlice writeDb,
+    ITicketReservation ticketReservation,
     IMessageBus bus,
     ICurrentUserContext currentUserContext,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider) : IHandlerConfiguration
 {
+    /// <summary>
+    /// Applies one retry only for the authoritative booking idempotency constraint.
+    /// </summary>
+    public static void Configure(HandlerChain chain)
+    {
+        chain
+            .OnException<DbUpdateConcurrencyException>()
+            .RetryOnce();
+
+        chain
+            .OnException(
+                IsIdempotencyConstraintViolation,
+                "Bookings concurrent idempotency constraint violation")
+            .RetryOnce();
+    }
+
     /// <summary>
     /// Creates a new pending booking and coordinates the initial ticket reservation.
     /// </summary>
@@ -126,11 +148,10 @@ public sealed class CreateBookingHandler(
             CreatedAt = timeProvider.GetUtcNow()
         };
 
-        var reserveTicketsResult = await bus.InvokeAsync<Result>(
-            new ReserveTicketsCommand(
-                command.EventId,
-                command.Quantity,
-                booking.Id),
+        var reserveTicketsResult = await ticketReservation.ReserveAsync(
+            command.EventId,
+            command.Quantity,
+            booking.Id,
             cancellationToken);
 
         if (reserveTicketsResult.IsFailure)
@@ -160,6 +181,26 @@ public sealed class CreateBookingHandler(
         RequestBookingCommand command,
         CancellationToken cancellationToken) =>
         HandleCreateBooking((CreateBookingCommand)command, cancellationToken);
+
+    /// <summary>
+    /// Determines whether an exception represents the authoritative booking idempotency collision.
+    /// </summary>
+    public static bool IsIdempotencyConstraintViolation(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is PostgresException
+                {
+                    SqlState: PostgresErrorCodes.UniqueViolation,
+                    ConstraintName: BookingConfiguration.IdempotencyConstraintName
+                })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 /// <summary>

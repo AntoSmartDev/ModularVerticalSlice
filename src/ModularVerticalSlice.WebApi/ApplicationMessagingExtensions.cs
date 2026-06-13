@@ -29,15 +29,20 @@ public static class ApplicationMessagingExtensions
     /// </summary>
     /// <param name="options">The Wolverine options being configured.</param>
     /// <param name="configuration">The host configuration.</param>
+    /// <param name="configureDbContext">Optional additional DbContext configuration for a host.</param>
     public static void ConfigureApplicationMessaging(
         this WolverineOptions options,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Action<DbContextOptionsBuilder>? configureDbContext = null)
     {
         var connectionString = configuration.GetRequiredDatabaseConnectionString();
         var paymentsCircuitBreaker = GetPaymentsCircuitBreakerOptions(configuration);
 
         options.Services.AddDbContextWithWolverineIntegration<AppDbContext>(builder =>
-            builder.UseNpgsql(connectionString));
+        {
+            builder.UseNpgsql(connectionString);
+            configureDbContext?.Invoke(builder);
+        });
         options.UseRuntimeCompilation();
         options.Discovery.IncludeAssembly(typeof(BookingsModule).Assembly);
         options.Policies.AutoApplyTransactions();

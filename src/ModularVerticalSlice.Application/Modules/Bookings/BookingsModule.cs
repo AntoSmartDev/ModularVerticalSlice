@@ -26,6 +26,7 @@ public sealed class BookingsModule : IModule
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<CreateBookingHandler>();
         services.AddScoped<BookingLifecycleHandler>();
+        services.AddScoped<BookingPaymentEligibilityHandler>();
         services.AddScoped<GetCustomerBookingsHandler>();
         services.AddScoped<GetBookingDetailsHandler>();
     }

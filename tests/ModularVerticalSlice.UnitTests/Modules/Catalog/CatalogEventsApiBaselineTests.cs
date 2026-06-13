@@ -18,7 +18,7 @@ using CreateEventSliceHandler = ModularVerticalSlice.Application.Modules.Catalog
 using GetEventDetailsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails.GetEventDetailsHandler;
 using GetUpcomingEventsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents.GetUpcomingEventsHandler;
 using ReleaseTicketsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets.ReleaseTicketsHandler;
-using ReserveTicketsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets.ReserveTicketsHandler;
+using TicketReservation = ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets.TicketReservation;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Catalog;
 
@@ -119,14 +119,15 @@ public class CatalogEventsApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = CreateReserveTicketsHandler(db);
+        var reservation = new TicketReservation(db);
 
-        var (result, storageAction) = await handler.HandleReserveTickets(
-            new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
+        var result = await reservation.ReserveAsync(
+            eventId,
+            2,
+            Guid.NewGuid(),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
-        Assert.IsType<Update<Event>>(storageAction);
         Assert.Equal(8, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
@@ -149,16 +150,17 @@ public class CatalogEventsApiBaselineTests
         });
         await db.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var handler = CreateReserveTicketsHandler(db);
+        var reservation = new TicketReservation(db);
 
-        var (result, storageAction) = await handler.HandleReserveTickets(
-            new ReserveTicketsCommand(eventId, 2, Guid.NewGuid()),
+        var result = await reservation.ReserveAsync(
+            eventId,
+            2,
+            Guid.NewGuid(),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsFailure);
         Assert.Equal(ErrorType.Conflict, result.Error.Type);
         Assert.Equal("Catalog.NotEnoughTickets", result.Error.Code);
-        Assert.IsType<Nothing<Event>>(storageAction);
         Assert.Equal(1, db.Events.Single(x => x.Id == eventId).AvailableTickets);
     }
 
@@ -258,8 +260,6 @@ public class CatalogEventsApiBaselineTests
             timeProvider ?? new FixedTimeProvider(new DateTimeOffset(2026, 5, 23, 12, 0, 0, TimeSpan.Zero)));
 
     private static GetEventDetailsSliceHandler CreateGetEventDetailsHandler(AppDbContext db) => new(db);
-
-    private static ReserveTicketsSliceHandler CreateReserveTicketsHandler(AppDbContext db) => new(db);
 
     private static ReleaseTicketsSliceHandler CreateReleaseTicketsHandler(AppDbContext db) => new(db);
 

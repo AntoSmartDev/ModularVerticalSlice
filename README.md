@@ -36,8 +36,10 @@ before the domain is stable enough to justify them.
 transactions. Commands, events, and asynchronous coordination cross module boundaries
 through messages. Same-store read composition can deliberately cross a boundary through
 a narrow, explicit `DbContextSlice` when one relational query is the most concrete
-solution. Each exception is visible in the type system instead of being hidden behind a
-global DbContext. Extract when earned, not by default.
+solution. A same-process write that must share the caller's local transaction can use an
+explicit owning-module `Contracts` interface; it is a deliberate local exception, not a
+transport-ready boundary. Each exception is visible in the type system instead of being
+hidden behind a global DbContext. Extract when earned, not by default.
 
 > *The goal is to find a stable, maintainable equilibrium: a well-structured modular
 > monolith that can evolve toward independently deployable services without a disruptive
@@ -141,8 +143,11 @@ handler, and persistence access end-to-end. Modules group related slices and def
 public boundary. Commands, events, and asynchronous coordination use **Wolverine
 messages**. Direct calls into another module's feature or domain internals are not
 permitted. Explicit same-store read composition is allowed when its narrower coupling and
-single-query efficiency are worth the trade-off. The `WebApi` project is the composition
-root: it wires modules together but contains no business logic.
+single-query efficiency are worth the trade-off. The booking flow also demonstrates a
+Catalog-owned in-process reservation contract: Bookings can reserve tickets atomically
+without depending on Catalog features or persistence, while later release remains an
+asynchronous compensation message. The `WebApi` project is the composition root: it
+wires modules together but contains no business logic.
 
 ```
 src/
@@ -153,6 +158,7 @@ src/
         Persistence/                    # DbContextSlice interfaces (module-owned)
         Messages/                       # public events and commands
       Catalog/
+        Contracts/                       # public in-process collaboration contracts
       Payments/
       Notifications/
     Shared/                             # cross-cutting contracts (no module deps)

@@ -1,9 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Persistence;
+using ModularVerticalSlice.SharedKernel;
 using Wolverine;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Payments;
@@ -34,9 +37,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
-            new TestMessageContext(),
+            CreateEligibleMessageBus(),
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 0, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
@@ -45,7 +47,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     Guid.NewGuid(),
                     eventId,
                     "technical-failure-user",
-                    1),
+                    1,
+                DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
         var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
@@ -80,9 +83,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
-            new TestMessageContext(),
+            CreateEligibleMessageBus(),
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 5, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
@@ -91,7 +93,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     Guid.NewGuid(),
                     eventId,
                     "technical-terminal-user",
-                    1),
+                    1,
+                DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
         var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
@@ -110,7 +113,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
     public async Task ProcessPayment_Business_Failure_Should_Stay_Outside_Runtime_Retry_And_Dlq_Baseline()
     {
         await using var db = CreateDbContext();
-        var bus = new TestMessageContext();
+        var bus = CreateEligibleMessageBus();
         var eventId = Guid.NewGuid();
 
         db.Events.Add(new Event
@@ -125,7 +128,6 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
             bus,
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 10, 0, TimeSpan.Zero)));
@@ -135,7 +137,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                 Guid.NewGuid(),
                 eventId,
                 "declined-user",
-                1),
+                1,
+                DateTimeOffset.MaxValue),
             TestContext.Current.CancellationToken);
 
         Assert.True(result.IsSuccess);
@@ -164,9 +167,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
-            new TestMessageContext(),
+            CreateEligibleMessageBus(),
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 15, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
@@ -175,7 +177,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     Guid.NewGuid(),
                     eventId,
                     "technical-failure-user",
-                    1),
+                    1,
+                DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
         var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
@@ -210,6 +213,16 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
         return new AppDbContext(options);
     }
 
+    private static TestMessageContext CreateEligibleMessageBus()
+    {
+        var bus = new TestMessageContext();
+        bus.WhenInvokedMessageOf<CheckBookingPaymentEligibilityQuery>()
+            .RespondWith(Result.Success());
+        bus.WhenInvokedMessageOf<GetEventTicketPriceQuery>()
+            .RespondWith(Result.Success(20m));
+        return bus;
+    }
+
     private static async Task<PaymentsTechnicalFailureRuntimeRoute> ExecuteAndDescribeTechnicalFailure(
         string userId)
     {
@@ -228,9 +241,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
 
         var handler = new PaymentProcessingHandler(
             db,
-            db,
             new FakePaymentGateway(),
-            new TestMessageContext(),
+            CreateEligibleMessageBus(),
             new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 20, 0, TimeSpan.Zero)));
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
@@ -239,7 +251,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                     Guid.NewGuid(),
                     eventId,
                     userId,
-                    1),
+                    1,
+                DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
         return PaymentsTechnicalFailureRuntimeObservability.Describe(exception);

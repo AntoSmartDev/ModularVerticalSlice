@@ -89,20 +89,15 @@ public class TicketLifecycleBaselineTests
     }
 
     /// <summary>
-    /// Verifies that reserve and release commands expose the same stable booking coordination shape.
+    /// Verifies that the asynchronous release command exposes its stable compensation shape.
     /// </summary>
     [Fact]
-    public void Ticket_Lifecycle_Commands_Should_Expose_Stable_Coordination_Shape()
+    public void ReleaseTicketsCommand_Should_Expose_Stable_Compensation_Shape()
     {
         var eventId = Guid.NewGuid();
         var bookingId = Guid.NewGuid();
 
-        var reserve = new ReserveTicketsCommand(eventId, 4, bookingId);
         var release = new ReleaseTicketsCommand(eventId, 4, bookingId);
-
-        Assert.Equal(eventId, reserve.EventId);
-        Assert.Equal(4, reserve.Quantity);
-        Assert.Equal(bookingId, reserve.BookingId);
 
         Assert.Equal(eventId, release.EventId);
         Assert.Equal(4, release.Quantity);
