@@ -11,6 +11,12 @@ namespace ModularVerticalSlice.Application.Modules.Payments;
 public static class PaymentsRuntimeRecoveryPolicies
 {
     /// <summary>
+    /// Determines whether a technical failure contributes to the Payments listener circuit breaker.
+    /// </summary>
+    public static bool ShouldAffectCircuitBreaker(PaymentTechnicalFailureException exception) =>
+        exception.ProviderState == PaymentProviderStateKind.DegradedRecoverable;
+
+    /// <summary>
     /// Applies the baseline runtime-recovery handling for Payments technical failures.
     /// </summary>
     public static void Configure(WolverineOptions options)

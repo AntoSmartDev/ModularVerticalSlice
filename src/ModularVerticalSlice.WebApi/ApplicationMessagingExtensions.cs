@@ -3,11 +3,15 @@ using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycl
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments;
+using ModularVerticalSlice.Application.Modules.Payments.Domain;
+using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
+using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Notifications;
 using ModularVerticalSlice.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Wolverine;
 using Wolverine.EntityFrameworkCore;
 using Wolverine.Postgresql;
@@ -30,6 +34,7 @@ public static class ApplicationMessagingExtensions
         IConfiguration configuration)
     {
         var connectionString = configuration.GetRequiredDatabaseConnectionString();
+        var paymentsCircuitBreaker = GetPaymentsCircuitBreakerOptions(configuration);
 
         options.Services.AddDbContextWithWolverineIntegration<AppDbContext>(builder =>
             builder.UseNpgsql(connectionString));
@@ -40,8 +45,46 @@ public static class ApplicationMessagingExtensions
         PaymentsRuntimeRecoveryPolicies.Configure(options);
         NotificationsRuntimeRecoveryPolicies.Configure(options);
         options.LocalQueueFor<BookingConfirmedEvent>().UseDurableInbox();
+        options.PublishMessage<ProcessPaymentCommand>()
+            .ToLocalQueue(PaymentsCircuitBreakerOptions.QueueName);
+        options.LocalQueue(PaymentsCircuitBreakerOptions.QueueName)
+            .UseDurableInbox()
+            .CircuitBreaker(circuit =>
+            {
+                circuit.MinimumThreshold = paymentsCircuitBreaker.MinimumThreshold;
+                circuit.FailurePercentageThreshold = paymentsCircuitBreaker.FailurePercentageThreshold;
+                circuit.TrackingPeriod = paymentsCircuitBreaker.TrackingPeriod;
+                circuit.PauseTime = paymentsCircuitBreaker.PauseTime;
+                circuit.Include<PaymentTechnicalFailureException>(
+                    PaymentsRuntimeRecoveryPolicies.ShouldAffectCircuitBreaker);
+            });
         options
             .PersistMessagesWithPostgresql(connectionString, "messaging")
             .EnableMessageTransport(_ => { });
+    }
+
+    private static PaymentsCircuitBreakerOptions GetPaymentsCircuitBreakerOptions(
+        IConfiguration configuration)
+    {
+        var circuitBreaker = configuration
+            .GetRequiredSection(PaymentsCircuitBreakerOptions.SectionName)
+            .Get<PaymentsCircuitBreakerOptions>()
+            ?? throw new OptionsValidationException(
+                PaymentsCircuitBreakerOptions.SectionName,
+                typeof(PaymentsCircuitBreakerOptions),
+                ["Payments circuit-breaker configuration is required."]);
+
+        var paymentWindow = configuration.GetValue<TimeSpan>("Bookings:Lifecycle:PaymentWindow");
+        var validation = PaymentsCircuitBreakerOptions.Validate(circuitBreaker, paymentWindow);
+
+        if (validation.Failed)
+        {
+            throw new OptionsValidationException(
+                PaymentsCircuitBreakerOptions.SectionName,
+                typeof(PaymentsCircuitBreakerOptions),
+                validation.Failures);
+        }
+
+        return circuitBreaker;
     }
 }
