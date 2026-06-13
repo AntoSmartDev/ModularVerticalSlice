@@ -33,10 +33,11 @@ but distributed transaction overhead, eventual consistency, and operational comp
 before the domain is stable enough to justify them.
 
 **Modular-first (this project)** — explicit module boundaries, shared process, local
-transactions. Modules communicate through messages, never by direct method call. Each
-module owns its persistence slice. The extraction path is clean because the boundaries
-were drawn at design time, enforced by the compiler, and validated by architecture tests.
-Extract when earned, not by default.
+transactions. Commands, events, and asynchronous coordination cross module boundaries
+through messages. Same-store read composition can deliberately cross a boundary through
+a narrow, explicit `DbContextSlice` when one relational query is the most concrete
+solution. Each exception is visible in the type system instead of being hidden behind a
+global DbContext. Extract when earned, not by default.
 
 > *The goal is to find a stable, maintainable equilibrium: a well-structured modular
 > monolith that can evolve toward independently deployable services without a disruptive
@@ -71,7 +72,8 @@ justified when throughput or topology requirements emerge, not as defaults.
 **Architecture tests are mandatory, never advisory**  
 Structural rules are enforced by [NetArchTest](https://github.com/BenMorris/NetArchTest):
 module boundaries, handler isolation, persistence access constraints. Violations fail the
-build. Code review is not a substitute for compiler-verified architecture.
+architecture test suite and should block CI. Code review is not a substitute for
+executable architecture rules.
 
 **Shared kernel is intentionally minimal**  
 `ModularVerticalSlice.SharedKernel` contains only `Result<T>`, `Error`, and `ErrorType`.
@@ -103,8 +105,29 @@ module earns it. The shared transaction is preserved in the meantime: no distrib
 transaction overhead, no two-phase commit, no eventual consistency where you don't need
 it yet.
 
-When a module eventually needs to become a service, only the implementation changes.
-The contract — the slice interface — was already there.
+When a module eventually needs to become a service, the existing slice boundary reduces
+the refactoring surface because handlers already depend on narrow contracts instead of
+the global `AppDbContext`. Module-owned slices can often keep their shape while their
+implementation and DI registration change. Composite or cross-module read slices
+deliberately identify the places that must evolve into an API, replicated read model, or
+other remote contract during extraction.
+
+### Pragmatic cross-module reads
+
+Messages remain the default for commands, events, asynchronous workflows, and
+coordination that must survive future process boundaries. A modular monolith can still
+benefit from its shared relational store for selected read flows.
+
+`GetBookingDetails` and `GetCustomerBookings` use the explicit
+`IBookingCatalogReadDbContextSlice` to compose Booking and Catalog data in one projected
+SQL query. This preserves flexibility without exposing a global DbContext or silently
+opening every module table to every handler.
+
+The approach also helps avoid a common source of EF Core N+1 queries: the required data is
+joined and projected explicitly instead of being loaded by repeatedly navigating
+relationships. A `DbContextSlice` does not automatically prevent N+1 queries; query shape
+still matters. Its value is that cross-module access becomes narrow, reviewable, and easy
+to replace when the boundary moves out of process.
 
 → See [ADR-0026](docs/adr/ADR-0026-dbcontextslice-pattern.md) for the full design
 rationale and comparison with Bounded DbContext.
@@ -115,9 +138,11 @@ rationale and comparison with Bounded DbContext.
 
 The solution is organised around **vertical slices**: each feature owns its command,
 handler, and persistence access end-to-end. Modules group related slices and define their
-public boundary — the only cross-module communication path is through **Wolverine messages**.
-Direct method calls across module boundaries are not permitted. The `WebApi` project is
-the composition root: it wires modules together but contains no business logic.
+public boundary. Commands, events, and asynchronous coordination use **Wolverine
+messages**. Direct calls into another module's feature or domain internals are not
+permitted. Explicit same-store read composition is allowed when its narrower coupling and
+single-query efficiency are worth the trade-off. The `WebApi` project is the composition
+root: it wires modules together but contains no business logic.
 
 ```
 src/
@@ -153,27 +178,42 @@ using [NetArchTest](https://github.com/BenMorris/NetArchTest). Rules include:
 - `WebApi` does not reference module persistence entity types
 - `Application` has no dependency on the `Persistence` assembly — handlers use only their declared `DbContextSlice`
 
-Violations fail the build. There is no advisory-only rule.
+Violations fail the architecture test suite. Run it locally and make it a required CI
+gate; there is no advisory-only rule.
 
 ---
 
 ## Local setup
 
-Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download) and Docker.
+Requirements: [.NET 10 SDK](https://dotnet.microsoft.com/download), Docker, and the
+[EF Core CLI tools](https://learn.microsoft.com/ef/core/cli/dotnet).
 
 ```powershell
 docker compose up -d
+$env:ConnectionStrings__Database = "Host=localhost;Port=5432;Database=modularverticalslice;Username=postgres;Password=postgres"
+dotnet ef database update --project .\src\ModularVerticalSlice.Persistence
 dotnet run --project .\src\ModularVerticalSlice.WebApi
 ```
 
 The development baseline uses the disposable PostgreSQL credentials from
-`docker-compose.yml`, pre-configured in `appsettings.Development.json`.
+`docker-compose.yml`, pre-configured in `appsettings.Development.json`. The explicit
+environment variable is required by the design-time DbContext factory when applying EF
+Core migrations.
 
 For CI, production, and EF Core design-time commands, override via environment or
 a secret manager:
 
 ```powershell
 $env:ConnectionStrings__Database = "Host=localhost;Port=5432;Database=modularverticalslice;Username=<user>;Password=<password>"
+```
+
+Run the complete verification baseline with:
+
+```powershell
+dotnet build .\ModularVerticalSlice.slnx --no-restore
+dotnet test .\tests\ModularVerticalSlice.UnitTests\ModularVerticalSlice.UnitTests.csproj --no-build
+dotnet test .\tests\ModularVerticalSlice.IntegrationTests\ModularVerticalSlice.IntegrationTests.csproj --no-build
+dotnet test .\tests\ModularVerticalSlice.ArchitectureTests\ModularVerticalSlice.ArchitectureTests.csproj --no-build
 ```
 
 ---
