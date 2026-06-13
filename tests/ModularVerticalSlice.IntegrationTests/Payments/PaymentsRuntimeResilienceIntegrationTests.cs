@@ -35,7 +35,7 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
         var gateway = host.Services.GetRequiredService<ObservablePaymentGateway>();
         var scenario = NewScenario("retry");
         gateway.Configure(scenario.UserId, PaymentGatewaySimulation.TransientThenSuccess);
-        await SeedEventAsync(host, scenario.EventId);
+        await SeedEligibleScenarioAsync(host, scenario);
 
         var session = await host
             .TrackActivity()
@@ -57,7 +57,7 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
         var gateway = host.Services.GetRequiredService<ObservablePaymentGateway>();
         var scenario = NewScenario("terminal");
         gateway.Configure(scenario.UserId, PaymentGatewaySimulation.Terminal);
-        await SeedEventAsync(host, scenario.EventId);
+        await SeedEligibleScenarioAsync(host, scenario);
 
         var session = await host
             .TrackActivity()
@@ -80,9 +80,9 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
         gateway.Configure(scenario.UserId, PaymentGatewaySimulation.BusinessDecline);
         gateway.Configure(secondDecline.UserId, PaymentGatewaySimulation.BusinessDecline);
         gateway.Configure(probe.UserId, PaymentGatewaySimulation.Success);
-        await SeedEventAsync(host, scenario.EventId);
-        await SeedEventAsync(host, secondDecline.EventId);
-        await SeedEventAsync(host, probe.EventId);
+        await SeedEligibleScenarioAsync(host, scenario);
+        await SeedEligibleScenarioAsync(host, secondDecline);
+        await SeedEligibleScenarioAsync(host, probe);
 
         var session = await host
             .TrackActivity()
@@ -120,10 +120,10 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
         gateway.Configure(secondFailure.UserId, PaymentGatewaySimulation.AlwaysDegradedRecoverable);
         gateway.Configure(pausedProbe.UserId, PaymentGatewaySimulation.Success);
         gateway.Configure(resumedProbe.UserId, PaymentGatewaySimulation.Success);
-        await SeedEventAsync(host, scenario.EventId);
-        await SeedEventAsync(host, secondFailure.EventId);
-        await SeedEventAsync(host, pausedProbe.EventId);
-        await SeedEventAsync(host, resumedProbe.EventId);
+        await SeedEligibleScenarioAsync(host, scenario);
+        await SeedEligibleScenarioAsync(host, secondFailure);
+        await SeedEligibleScenarioAsync(host, pausedProbe);
+        await SeedEligibleScenarioAsync(host, resumedProbe);
 
         await SendAsync(host, scenario.Command);
         await SendAsync(host, secondFailure.Command);
@@ -159,23 +159,66 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
             host.Services.GetRequiredService<IConfiguration>());
     }
 
-    [Fact]
-    public async Task Payment_After_Booking_Expiry_Should_Expose_Late_Payment_Coherence_Gap()
+    [Theory]
+    [InlineData(BookingStatus.Expired)]
+    [InlineData(BookingStatus.Cancelled)]
+    [InlineData(BookingStatus.Confirmed)]
+    public async Task Ineligible_Booking_Should_Reject_Payment_Without_Side_Effects(BookingStatus status)
     {
         using var host = await StartHostAsync();
         var gateway = host.Services.GetRequiredService<ObservablePaymentGateway>();
         var scenario = NewScenario("late");
         gateway.Configure(scenario.UserId, PaymentGatewaySimulation.Success);
         await SeedEventAsync(host, scenario.EventId);
-        await SeedExpiredBookingAsync(host, scenario);
+        await SeedBookingAsync(host, scenario, status);
 
         var session = await host
             .TrackActivity()
             .SendMessageAndWaitAsync(scenario.Command, new DeliveryOptions());
 
         Assert.Empty(session.AllExceptions());
-        Assert.Equal(BookingStatus.Expired, await ReadBookingStatusAsync(host, scenario.BookingId));
-        Assert.Equal(PaymentStatus.Succeeded, await ReadPaymentStatusAsync(host, scenario.BookingId));
+        Assert.Equal(0, gateway.AttemptsFor(scenario.UserId));
+        Assert.Equal(status, await ReadBookingStatusAsync(host, scenario.BookingId));
+        Assert.Null(await ReadPaymentStatusAsync(host, scenario.BookingId));
+        Assert.Empty(session.Sent.MessagesOf<PaymentSucceededEvent>());
+        Assert.Empty(session.Sent.MessagesOf<PaymentFailedEvent>());
+    }
+
+    [Fact]
+    public async Task Missing_Booking_Should_Reject_Payment_Without_Side_Effects()
+    {
+        using var host = await StartHostAsync();
+        var gateway = host.Services.GetRequiredService<ObservablePaymentGateway>();
+        var scenario = NewScenario("missing");
+        gateway.Configure(scenario.UserId, PaymentGatewaySimulation.Success);
+        await SeedEventAsync(host, scenario.EventId);
+
+        var session = await host.TrackActivity().SendMessageAndWaitAsync(scenario.Command, new DeliveryOptions());
+
+        Assert.Empty(session.AllExceptions());
+        Assert.Equal(0, gateway.AttemptsFor(scenario.UserId));
+        Assert.Null(await ReadPaymentStatusAsync(host, scenario.BookingId));
+        Assert.Empty(session.Sent.MessagesOf<PaymentSucceededEvent>());
+        Assert.Empty(session.Sent.MessagesOf<PaymentFailedEvent>());
+    }
+
+    [Fact]
+    public async Task Elapsed_Deadline_Should_Reject_Pending_Booking_Without_Side_Effects()
+    {
+        using var host = await StartHostAsync();
+        var gateway = host.Services.GetRequiredService<ObservablePaymentGateway>();
+        var scenario = NewScenario("elapsed");
+        gateway.Configure(scenario.UserId, PaymentGatewaySimulation.Success);
+        await SeedEligibleScenarioAsync(host, scenario);
+
+        var command = scenario.Command with { PaymentDeadline = DateTimeOffset.UtcNow.AddSeconds(-1) };
+        var session = await host.TrackActivity().SendMessageAndWaitAsync(command, new DeliveryOptions());
+
+        Assert.Empty(session.AllExceptions());
+        Assert.Equal(0, gateway.AttemptsFor(scenario.UserId));
+        Assert.Null(await ReadPaymentStatusAsync(host, scenario.BookingId));
+        Assert.Empty(session.Sent.MessagesOf<PaymentSucceededEvent>());
+        Assert.Empty(session.Sent.MessagesOf<PaymentFailedEvent>());
     }
 
     private static async Task<IHost> StartHostAsync()
@@ -247,7 +290,7 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
             id,
             eventId,
             userId,
-            new ProcessPaymentCommand(id, eventId, userId, 1));
+            new ProcessPaymentCommand(id, eventId, userId, 1, DateTimeOffset.UtcNow.AddMinutes(5)));
     }
 
     private static async Task SendAsync(IHost host, object message)
@@ -271,7 +314,13 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
         await db.SaveChangesAsync();
     }
 
-    private static async Task SeedExpiredBookingAsync(IHost host, PaymentScenario scenario)
+    private static async Task SeedEligibleScenarioAsync(IHost host, PaymentScenario scenario)
+    {
+        await SeedEventAsync(host, scenario.EventId);
+        await SeedBookingAsync(host, scenario, BookingStatus.Pending);
+    }
+
+    private static async Task SeedBookingAsync(IHost host, PaymentScenario scenario, BookingStatus status)
     {
         await using var scope = host.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
@@ -280,7 +329,7 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
             Id = scenario.BookingId,
             EventId = scenario.EventId,
             Quantity = 1,
-            Status = BookingStatus.Expired,
+            Status = status,
             UserId = scenario.UserId,
             ClientRequestId = Guid.NewGuid(),
             CreatedAt = DateTimeOffset.UtcNow.AddMinutes(-1)

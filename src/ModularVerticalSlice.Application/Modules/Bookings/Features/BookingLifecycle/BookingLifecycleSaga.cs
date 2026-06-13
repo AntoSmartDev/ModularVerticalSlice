@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
@@ -83,7 +83,8 @@ public sealed class BookingLifecycleSaga : Saga
                 message.BookingId,
                 message.EventId,
                 message.UserId,
-                message.Quantity));
+                message.Quantity,
+                expiresAt));
 
         return saga;
     }

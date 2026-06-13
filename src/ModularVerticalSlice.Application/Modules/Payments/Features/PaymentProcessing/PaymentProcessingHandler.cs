@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
@@ -38,6 +39,23 @@ public sealed class PaymentProcessingHandler(
         if (validation.IsFailure)
         {
             return validation;
+        }
+
+        if (timeProvider.GetUtcNow() >= command.PaymentDeadline)
+        {
+            return Result.Failure(
+                Error.Conflict(
+                    "Payments.PaymentWindowExpired",
+                    "The booking payment window has elapsed."));
+        }
+
+        var eligibility = await bus.InvokeAsync<Result>(
+            new CheckBookingPaymentEligibilityQuery(command.BookingId),
+            cancellationToken);
+
+        if (eligibility.IsFailure)
+        {
+            return eligibility;
         }
 
         var ticketPrice = await catalogReadDb.Events

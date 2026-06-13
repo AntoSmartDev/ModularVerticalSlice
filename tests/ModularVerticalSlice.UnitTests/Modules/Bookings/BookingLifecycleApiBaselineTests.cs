@@ -630,7 +630,8 @@ public class BookingLifecycleApiBaselineTests
             bookingId,
             eventId,
             "user-1",
-            2);
+            2,
+            expiredAt);
         var timeoutExpired = new BookingPaymentTimeoutExpiredEvent(
             bookingId,
             expiredAt);
@@ -639,6 +640,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.Equal(eventId, processPayment.EventId);
         Assert.Equal("user-1", processPayment.UserId);
         Assert.Equal(2, processPayment.Quantity);
+        Assert.Equal(expiredAt, processPayment.PaymentDeadline);
 
         Assert.Equal(bookingId, timeoutExpired.BookingId);
         Assert.Equal(expiredAt, timeoutExpired.ExpiredAt);
@@ -755,7 +757,8 @@ public class BookingLifecycleApiBaselineTests
             published.BookingId == bookingId &&
             published.EventId == eventId &&
             published.UserId == "user-1" &&
-            published.Quantity == 2);
+            published.Quantity == 2 &&
+            published.PaymentDeadline == createdAt.AddMinutes(20));
 
         Assert.Contains(bus.ScheduledMessages(), x =>
             x.Message is BookingPaymentTimeoutExpiredEvent scheduled &&
