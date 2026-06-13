@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Shared.Modules;
 
@@ -18,6 +19,13 @@ public sealed class PaymentsModule : IModule
     /// <inheritdoc />
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<PaymentsCircuitBreakerOptions>()
+            .Bind(configuration.GetSection(PaymentsCircuitBreakerOptions.SectionName))
+            .Validate(
+                options => PaymentsCircuitBreakerOptions.Validate(options).Succeeded,
+                "Payments circuit-breaker values are invalid.")
+            .ValidateOnStart();
+
         services.AddScoped<IPaymentGateway, FakePaymentGateway>();
     }
 
