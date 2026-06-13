@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
@@ -39,7 +40,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),
-            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 0, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 0, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             handler.HandleProcessPayment(
@@ -85,7 +87,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),
-            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 5, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 5, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             handler.HandleProcessPayment(
@@ -130,7 +133,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             db,
             new FakePaymentGateway(),
             bus,
-            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 10, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 10, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var result = await handler.HandleProcessPayment(
             new ProcessPaymentCommand(
@@ -169,7 +173,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),
-            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 15, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 15, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             handler.HandleProcessPayment(
@@ -243,7 +248,8 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
             db,
             new FakePaymentGateway(),
             CreateEligibleMessageBus(),
-            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 20, 0, TimeSpan.Zero)));
+            new FixedTimeProvider(new DateTimeOffset(2026, 6, 4, 18, 20, 0, TimeSpan.Zero)),
+            NullLogger<PaymentProcessingHandler>.Instance);
 
         var exception = await Assert.ThrowsAsync<PaymentTechnicalFailureException>(() =>
             handler.HandleProcessPayment(

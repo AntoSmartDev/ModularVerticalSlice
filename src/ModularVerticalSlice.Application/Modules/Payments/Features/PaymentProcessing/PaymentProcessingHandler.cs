@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
@@ -24,7 +25,8 @@ public sealed class PaymentProcessingHandler(
     IPaymentWriteDbContextSlice writeDb,
     IPaymentGateway paymentGateway,
     IMessageBus bus,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<PaymentProcessingHandler> logger)
 {
     /// <summary>
     /// Handles the baseline ProcessPayment command.
@@ -75,16 +77,25 @@ public sealed class PaymentProcessingHandler(
 
         var processedAt = timeProvider.GetUtcNow();
         var paymentId = Guid.NewGuid();
+        var amount = ticketPrice.Value * command.Quantity;
+        var status = outcome.IsSuccess ? PaymentStatus.Succeeded : PaymentStatus.Failed;
 
         writeDb.Payments.Add(new Payment
         {
             Id = paymentId,
             BookingId = command.BookingId,
-            Amount = ticketPrice.Value * command.Quantity,
-            Status = outcome.IsSuccess ? PaymentStatus.Succeeded : PaymentStatus.Failed,
+            Amount = amount,
+            Status = status,
             CreatedAt = processedAt,
             CompletedAt = processedAt
         });
+
+        logger.LogInformation(
+            "Payment {PaymentId} recorded as {PaymentStatus} for booking {BookingId} with amount {PaymentAmount}.",
+            paymentId,
+            status,
+            command.BookingId,
+            amount);
 
         if (outcome.IsSuccess)
         {

@@ -244,6 +244,33 @@ pushes to `main`, and manual starts from the GitHub Actions page.
 
 ---
 
+## Operational readiness
+
+The host exposes a small, truthful operational surface — proportional to a
+starter kit, not a full observability stack.
+
+**Health endpoints** (both anonymous):
+- `GET /health/live` — liveness. Process-only: it runs no dependency checks and
+  stays healthy as long as the host is running.
+- `GET /health/ready` — readiness. Depends on PostgreSQL connectivity of the
+  application `AppDbContext`. Because the Wolverine durable message store shares
+  the same connection, this is a faithful signal that the running application can
+  actually serve work. It returns `503` while PostgreSQL is unreachable and `200`
+  once it recovers.
+
+**Correlation and logs**:
+- An inbound `X-Correlation-Id` header is honored and echoed back unchanged; a
+  non-empty id is generated when the header is absent.
+- The correlation id is added to the logging scope on both the HTTP path and
+  every message handler, so a request and the messages it triggers share one id.
+  Wolverine derives the id from the ambient activity and propagates it across the
+  message chain.
+- Meaningful workflow events (payment outcome, booking lifecycle transitions) are
+  emitted as structured logs. Distributed tracing is available through the
+  existing OpenTelemetry wiring (console in development, optional OTLP exporter).
+
+---
+
 ## Architecture decisions
 
 Design decisions with their rationale are recorded in [`docs/adr/`](docs/adr/).

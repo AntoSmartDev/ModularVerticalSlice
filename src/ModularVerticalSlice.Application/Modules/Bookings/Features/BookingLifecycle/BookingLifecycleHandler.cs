@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
@@ -23,11 +24,13 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 public sealed class BookingLifecycleHandler(
     IBookingWriteDbContextSlice writeDb,
     IMessageBus bus,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider,
+    ILogger<BookingLifecycleHandler> logger)
 {
     private readonly IBookingWriteDbContextSlice _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
     private readonly IMessageBus _bus = bus ?? throw new ArgumentNullException(nameof(bus));
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+    private readonly ILogger<BookingLifecycleHandler> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <summary>
     /// Confirms an existing pending booking.
@@ -48,6 +51,11 @@ public sealed class BookingLifecycleHandler(
         {
             return result;
         }
+
+        _logger.LogInformation(
+            "Booking {BookingId} transitioned to {BookingStatus}.",
+            booking.Id,
+            booking.Status);
 
         await _bus.PublishAsync(
             new BookingConfirmedEvent(
@@ -89,7 +97,16 @@ public sealed class BookingLifecycleHandler(
             return BookingNotFound();
         }
 
-        return transition(booking);
+        var result = transition(booking);
+        if (result.IsSuccess)
+        {
+            _logger.LogInformation(
+                "Booking {BookingId} transitioned to {BookingStatus}.",
+                booking.Id,
+                booking.Status);
+        }
+
+        return result;
     }
 
     private Task<Booking?> LoadTrackedBookingAsync(Guid bookingId, CancellationToken cancellationToken) =>
