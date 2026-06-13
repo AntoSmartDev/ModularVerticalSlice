@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -10,8 +10,12 @@ using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.SharedKernel;
+using Npgsql;
 using Wolverine;
 using Wolverine.Attributes;
+using Wolverine.Configuration;
+using Wolverine.ErrorHandling;
+using Wolverine.Runtime.Handlers;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 
@@ -81,15 +85,28 @@ public sealed class CreateBookingHandler(
     IBookingWriteDbContextSlice writeDb,
     IMessageBus bus,
     ICurrentUserContext currentUserContext,
-    TimeProvider timeProvider)
+    TimeProvider timeProvider) : IHandlerConfiguration
 {
+    /// <summary>
+    /// Applies one retry only for the authoritative booking idempotency constraint.
+    /// </summary>
+    public static void Configure(HandlerChain chain)
+    {
+        chain
+            .OnException(
+                IsIdempotencyConstraintViolation,
+                "Bookings concurrent idempotency constraint violation")
+            .RetryOnce();
+    }
+
     /// <summary>
     /// Creates a new pending booking and coordinates the initial ticket reservation.
     /// </summary>
     [WolverineHandler]
     public async Task<Result<Guid>> HandleCreateBooking(
         CreateBookingCommand command,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Envelope? envelope = null)
     {
         var validation = CreateBookingValidator.Validate(command);
         if (validation.IsFailure)
@@ -112,6 +129,23 @@ public sealed class CreateBookingHandler(
 
         if (existingBooking is not null)
         {
+            // A concurrent losing attempt has already committed its nested Catalog reservation.
+            // Compensate only Wolverine retries; ordinary sequential duplicates reserved nothing.
+            if (envelope?.Attempts > 0)
+            {
+                var releaseResult = await bus.InvokeAsync<Result>(
+                    new ReleaseTicketsCommand(
+                        command.EventId,
+                        command.Quantity,
+                        existingBooking.Id),
+                    cancellationToken);
+
+                if (releaseResult.IsFailure)
+                {
+                    return Result.Failure<Guid>(releaseResult.Error);
+                }
+            }
+
             return existingBooking.Id;
         }
 
@@ -160,6 +194,26 @@ public sealed class CreateBookingHandler(
         RequestBookingCommand command,
         CancellationToken cancellationToken) =>
         HandleCreateBooking((CreateBookingCommand)command, cancellationToken);
+
+    /// <summary>
+    /// Determines whether an exception represents the authoritative booking idempotency collision.
+    /// </summary>
+    public static bool IsIdempotencyConstraintViolation(Exception exception)
+    {
+        for (var current = exception; current is not null; current = current.InnerException)
+        {
+            if (current is PostgresException
+                {
+                    SqlState: PostgresErrorCodes.UniqueViolation,
+                    ConstraintName: BookingConfiguration.IdempotencyConstraintName
+                })
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
 
 /// <summary>

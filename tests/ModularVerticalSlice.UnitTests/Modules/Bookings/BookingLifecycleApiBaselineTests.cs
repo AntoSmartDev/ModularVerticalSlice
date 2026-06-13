@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetCustomerBookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
+using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
@@ -25,6 +27,36 @@ namespace ModularVerticalSlice.UnitTests.Modules.Bookings;
 /// </summary>
 public class BookingLifecycleApiBaselineTests
 {
+    [Fact]
+    public void CreateBooking_Idempotency_Retry_Filter_Should_Match_Only_The_Exact_Unique_Constraint()
+    {
+        var expected = new DbUpdateException(
+            "wrapped",
+            new PostgresException(
+                "duplicate",
+                "ERROR",
+                "ERROR",
+                PostgresErrorCodes.UniqueViolation,
+                constraintName: BookingConfiguration.IdempotencyConstraintName));
+        var wrongConstraint = new PostgresException(
+            "duplicate",
+            "ERROR",
+            "ERROR",
+            PostgresErrorCodes.UniqueViolation,
+            constraintName: "IX_other");
+        var wrongSqlState = new PostgresException(
+            "check",
+            "ERROR",
+            "ERROR",
+            PostgresErrorCodes.CheckViolation,
+            constraintName: BookingConfiguration.IdempotencyConstraintName);
+
+        Assert.True(CreateBookingHandler.IsIdempotencyConstraintViolation(expected));
+        Assert.False(CreateBookingHandler.IsIdempotencyConstraintViolation(wrongConstraint));
+        Assert.False(CreateBookingHandler.IsIdempotencyConstraintViolation(wrongSqlState));
+        Assert.False(CreateBookingHandler.IsIdempotencyConstraintViolation(new DbUpdateException()));
+    }
+
     /// <summary>
     /// Verifies that a create-booking request creates a pending booking owned by the current user.
     /// </summary>
@@ -111,6 +143,45 @@ public class BookingLifecycleApiBaselineTests
         Assert.Equal(bookingId, result.Value);
         Assert.Single(db.Bookings);
         Assert.Equal(5, db.Events.Single(x => x.Id == eventId).AvailableTickets);
+    }
+
+    [Fact]
+    public async Task CreateBooking_Retry_Should_Compensate_The_Losing_Reservation_Once()
+    {
+        await using var db = CreateDbContext();
+        var bookingId = Guid.NewGuid();
+        var eventId = Guid.NewGuid();
+        var clientRequestId = Guid.NewGuid();
+        db.Bookings.Add(new Booking
+        {
+            Id = bookingId,
+            EventId = eventId,
+            Quantity = 2,
+            Status = BookingStatus.Pending,
+            UserId = "user-1",
+            ClientRequestId = clientRequestId,
+            CreatedAt = DateTimeOffset.UtcNow
+        });
+        await db.SaveChangesAsync(TestContext.Current.CancellationToken);
+
+        var bus = new TestMessageContext();
+        bus.WhenInvokedMessageOf<ReleaseTicketsCommand>().RespondWith(Result.Success());
+        var handler = CreateHandler(db, bus, new FakeCurrentUserContext("user-1"));
+        var command = new CreateBookingCommand(eventId, 2, clientRequestId);
+
+        var result = await handler.HandleCreateBooking(
+            command,
+            TestContext.Current.CancellationToken,
+            new Envelope(command) { Attempts = 1 });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(bookingId, result.Value);
+        Assert.Contains(bus.Invoked, x =>
+            x is Envelope { Message: ReleaseTicketsCommand release } &&
+            release.EventId == eventId &&
+            release.Quantity == 2 &&
+            release.BookingId == bookingId);
+        Assert.DoesNotContain(bus.Invoked, x => x is Envelope { Message: ReserveTicketsCommand });
     }
 
     /// <summary>
