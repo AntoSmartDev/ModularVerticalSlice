@@ -85,37 +85,49 @@ implementation detail. When Bookings needs to read Catalog data (a legitimate re
 composition), a dedicated composite slice is declared — `IBookingCatalogReadDbContextSlice`
 — and its existence is documented, visible, and testable. There is no silent coupling.
 
+This is a deliberate pragmatic escape hatch, not a rejection of module boundaries.
+Commands, events, asynchronous workflows, and write-side coordination still cross
+modules through messages. Same-store read composition may use a dedicated composite
+slice when one projected relational query is clearer and more efficient than introducing
+premature replication or remote calls.
+
+The explicit query surface also helps control a common EF Core N+1 failure mode. The
+current composed Bookings queries join and project the required data in one SQL query
+instead of repeatedly navigating relationships. The slice itself is not an automatic
+N+1 guarantee: query shape must still be reviewed and tested.
+
 ## The extraction path
 
 DbContextSlice is designed for eventual module promotion. When a module needs to become
 a separate service:
 
-1. The slice interface — declared in `Application.Modules.{Module}.Persistence` — does
-   not change. It is the contract.
-2. The implementation changes: instead of the shared `AppDbContext`, the module gets its
-   own `DbContext` subclass backed by its own database.
-3. The DI registration changes: the new implementation replaces the adapter.
+1. Module-owned slice interfaces already isolate handlers from the global
+   `AppDbContext`, reducing the code that must change.
+2. Their implementations and DI registrations can move to a module-specific DbContext
+   or remote adapter.
+3. Composite and cross-module read slices identify the coupling that must be replaced by
+   an API, replicated read model, or another remote contract.
+4. Shared transactions, migrations, and messaging topology must be revisited when the
+   process or database boundary changes.
 
-Nothing in the module's handlers, sagas, or domain logic needs to change. The contract
-was already there.
-
-This is the key structural advantage over an unplanned extraction: the persistence
-boundary was drawn at design time, enforced by the compiler, and validated by
-architecture tests (see ADR-0025, M11/F01). The extraction is a deployment decision,
-not a refactoring effort.
+The pattern does not make service extraction free. It makes the required work visible
+earlier and gives it a narrower, testable starting point. Compared with an unplanned
+extraction from a global DbContext, fewer handlers depend directly on infrastructure and
+the cross-module compromises are easier to locate.
 
 ## Architecture enforcement
 
-The `AppDbContextGuardrailTests` (M11/F02) assert that no type in the Application
+The `AppDbContextGuardrailTests` assert that no type in the Application
 assembly depends on `AppDbContext` directly. Handlers must use their declared
-DbContextSlice interface. This guarantee is checked on every build.
+DbContextSlice interface. This guarantee is checked whenever the architecture test suite
+runs and should be enforced as a required CI gate.
 
 ## Consequences
 
 - **Positive:** access isolation enforced by the compiler — no reliance on team discipline
 - **Positive:** shared transaction preserved — atomic operations across module tables
   remain possible within the monolith without distributed transaction infrastructure
-- **Positive:** extraction path is clean and requires no handler-level refactoring
+- **Positive:** extraction starts from narrow contracts and visible cross-module coupling
 - **Positive:** cross-module data access is structurally visible and auditable
 - **Positive:** `Slice` naming is consistent with the project's Vertical Slice Architecture vocabulary
 - **Neutral:** the rename from `I*DbContext` to `I*DbContextSlice` is a pure refactor — no behavioral change, no migration needed
