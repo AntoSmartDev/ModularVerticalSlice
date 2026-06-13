@@ -39,7 +39,7 @@ public sealed record BookingDetailsReadModel(
 /// Handles the query that returns details for a specific booking.
 /// </summary>
 public sealed class GetBookingDetailsHandler(
-    IBookingCatalogReadDbContext readDb,
+    IBookingCatalogReadDbContextSlice readDb,
     ICurrentUserContext currentUserContext)
 {
     /// <summary>

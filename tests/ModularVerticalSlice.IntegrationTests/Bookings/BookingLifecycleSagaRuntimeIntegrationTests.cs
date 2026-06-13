@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -300,7 +300,7 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
 }
 
 /// <summary>
-/// Verifies that mini DbContext adapters wrap the same scoped AppDbContext instance.
+/// Verifies that DbContextSlice adapters wrap the same scoped AppDbContext instance.
 /// If adapters held a separate instance, handler changes would not be committed by
 /// Wolverine's transaction middleware, and bookings would remain in Pending state.
 /// </summary>
@@ -321,7 +321,7 @@ public sealed class PersistenceRegistrationScopeTests
 
         using var scope = host.Services.CreateScope();
         var appDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var writeDb = scope.ServiceProvider.GetRequiredService<IBookingWriteDbContext>();
+        var writeDb = scope.ServiceProvider.GetRequiredService<IBookingWriteDbContextSlice>();
 
         // EF Core caches DbSet<T> per context instance, so same DbSet reference = same AppDbContext instance.
         // If adapters wrapped a separate AppDbContext, writeDb.Bookings would be a different object.

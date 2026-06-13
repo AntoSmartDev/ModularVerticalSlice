@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
@@ -21,11 +21,11 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLife
 /// (the Catalog <c>ReserveTickets</c>/<c>ReleaseTickets</c> pair) instead of applied uniformly.
 /// </remarks>
 public sealed class BookingLifecycleHandler(
-    IBookingWriteDbContext writeDb,
+    IBookingWriteDbContextSlice writeDb,
     IMessageBus bus,
     TimeProvider timeProvider)
 {
-    private readonly IBookingWriteDbContext _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
+    private readonly IBookingWriteDbContextSlice _writeDb = writeDb ?? throw new ArgumentNullException(nameof(writeDb));
     private readonly IMessageBus _bus = bus ?? throw new ArgumentNullException(nameof(bus));
     private readonly TimeProvider _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
 

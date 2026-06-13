@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Routing;
@@ -34,7 +34,7 @@ public sealed record CustomerBookingReadModel(
 /// Handles the query that returns bookings owned by the current user.
 /// </summary>
 public sealed class GetCustomerBookingsHandler(
-    IBookingCatalogReadDbContext readDb,
+    IBookingCatalogReadDbContextSlice readDb,
     ICurrentUserContext currentUserContext)
 {
     /// <summary>

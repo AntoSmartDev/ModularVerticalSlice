@@ -21,15 +21,15 @@ public static class PersistenceServiceCollectionExtensions
     /// <returns>The same service collection for chaining.</returns>
     public static IServiceCollection AddPersistence(this IServiceCollection services)
     {
-        // Explicit adapter types keep the mini DbContext boundary narrow while still
+        // Explicit adapter types keep the DbContextSlice boundary narrow while still
         // making the concrete AppDbContext dependency visible to Wolverine 6.
-        services.AddScoped<ICatalogReadDbContext, CatalogReadDbContextAdapter>();
-        services.AddScoped<ICatalogWriteDbContext, CatalogWriteDbContextAdapter>();
-        services.AddScoped<IBookingCatalogReadDbContext, BookingCatalogReadDbContextAdapter>();
-        services.AddScoped<IBookingReadDbContext, BookingReadDbContextAdapter>();
-        services.AddScoped<IBookingWriteDbContext, BookingWriteDbContextAdapter>();
-        services.AddScoped<IPaymentReadDbContext, PaymentReadDbContextAdapter>();
-        services.AddScoped<IPaymentWriteDbContext, PaymentWriteDbContextAdapter>();
+        services.AddScoped<ICatalogReadDbContextSlice, CatalogReadDbContextAdapter>();
+        services.AddScoped<ICatalogWriteDbContextSlice, CatalogWriteDbContextAdapter>();
+        services.AddScoped<IBookingCatalogReadDbContextSlice, BookingCatalogReadDbContextAdapter>();
+        services.AddScoped<IBookingReadDbContextSlice, BookingReadDbContextAdapter>();
+        services.AddScoped<IBookingWriteDbContextSlice, BookingWriteDbContextAdapter>();
+        services.AddScoped<IPaymentReadDbContextSlice, PaymentReadDbContextAdapter>();
+        services.AddScoped<IPaymentWriteDbContextSlice, PaymentWriteDbContextAdapter>();
 
         return services;
     }
@@ -39,7 +39,7 @@ public static class PersistenceServiceCollectionExtensions
 /// Exposes the Catalog read-only slice over the shared application DbContext.
 /// </summary>
 /// <param name="db">The shared application DbContext.</param>
-public sealed class CatalogReadDbContextAdapter(AppDbContext db) : ICatalogReadDbContext
+public sealed class CatalogReadDbContextAdapter(AppDbContext db) : ICatalogReadDbContextSlice
 {
     /// <inheritdoc />
     public IQueryable<Event> Events => db.Events.AsNoTracking();
@@ -49,7 +49,7 @@ public sealed class CatalogReadDbContextAdapter(AppDbContext db) : ICatalogReadD
 /// Exposes the Catalog write slice over the shared application DbContext.
 /// </summary>
 /// <param name="db">The shared application DbContext.</param>
-public sealed class CatalogWriteDbContextAdapter(AppDbContext db) : ICatalogWriteDbContext
+public sealed class CatalogWriteDbContextAdapter(AppDbContext db) : ICatalogWriteDbContextSlice
 {
     /// <inheritdoc />
     public DbSet<Event> Events => db.Events;
@@ -59,7 +59,7 @@ public sealed class CatalogWriteDbContextAdapter(AppDbContext db) : ICatalogWrit
 /// Exposes the composite Bookings/Catalog read slice over the shared application DbContext.
 /// </summary>
 /// <param name="db">The shared application DbContext.</param>
-public sealed class BookingCatalogReadDbContextAdapter(AppDbContext db) : IBookingCatalogReadDbContext
+public sealed class BookingCatalogReadDbContextAdapter(AppDbContext db) : IBookingCatalogReadDbContextSlice
 {
     /// <inheritdoc />
     public IQueryable<Booking> Bookings => db.Bookings.AsNoTracking();
@@ -72,7 +72,7 @@ public sealed class BookingCatalogReadDbContextAdapter(AppDbContext db) : IBooki
 /// Exposes the Bookings read-only slice over the shared application DbContext.
 /// </summary>
 /// <param name="db">The shared application DbContext.</param>
-public sealed class BookingReadDbContextAdapter(AppDbContext db) : IBookingReadDbContext
+public sealed class BookingReadDbContextAdapter(AppDbContext db) : IBookingReadDbContextSlice
 {
     /// <inheritdoc />
     public IQueryable<Booking> Bookings => db.Bookings.AsNoTracking();
@@ -82,7 +82,7 @@ public sealed class BookingReadDbContextAdapter(AppDbContext db) : IBookingReadD
 /// Exposes the Bookings write slice over the shared application DbContext.
 /// </summary>
 /// <param name="db">The shared application DbContext.</param>
-public sealed class BookingWriteDbContextAdapter(AppDbContext db) : IBookingWriteDbContext
+public sealed class BookingWriteDbContextAdapter(AppDbContext db) : IBookingWriteDbContextSlice
 {
     /// <inheritdoc />
     public DbSet<Booking> Bookings => db.Bookings;
@@ -92,7 +92,7 @@ public sealed class BookingWriteDbContextAdapter(AppDbContext db) : IBookingWrit
 /// Exposes the Payments read-only slice over the shared application DbContext.
 /// </summary>
 /// <param name="db">The shared application DbContext.</param>
-public sealed class PaymentReadDbContextAdapter(AppDbContext db) : IPaymentReadDbContext
+public sealed class PaymentReadDbContextAdapter(AppDbContext db) : IPaymentReadDbContextSlice
 {
     /// <inheritdoc />
     public IQueryable<Payment> Payments => db.Payments.AsNoTracking();
@@ -102,7 +102,7 @@ public sealed class PaymentReadDbContextAdapter(AppDbContext db) : IPaymentReadD
 /// Exposes the Payments write slice over the shared application DbContext.
 /// </summary>
 /// <param name="db">The shared application DbContext.</param>
-public sealed class PaymentWriteDbContextAdapter(AppDbContext db) : IPaymentWriteDbContext
+public sealed class PaymentWriteDbContextAdapter(AppDbContext db) : IPaymentWriteDbContextSlice
 {
     /// <inheritdoc />
     public DbSet<Payment> Payments => db.Payments;
