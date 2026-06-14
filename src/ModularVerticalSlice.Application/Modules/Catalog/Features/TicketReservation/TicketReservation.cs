@@ -3,7 +3,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Contracts;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
 using ModularVerticalSlice.SharedKernel;
 
-namespace ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
+namespace ModularVerticalSlice.Application.Modules.Catalog.Features.TicketReservation;
 
 /// <summary>
 /// Applies a Catalog-owned reservation to the caller's shared scoped DbContext.

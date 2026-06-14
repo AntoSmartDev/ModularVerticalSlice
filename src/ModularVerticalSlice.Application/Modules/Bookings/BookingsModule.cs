@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.CheckPaymentEligibility;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetCustomerBookings;
 using ModularVerticalSlice.Application.Shared.Modules;
@@ -26,7 +27,7 @@ public sealed class BookingsModule : IModule
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<CreateBookingHandler>();
         services.AddScoped<BookingLifecycleHandler>();
-        services.AddScoped<BookingPaymentEligibilityHandler>();
+        services.AddScoped<CheckPaymentEligibilityHandler>();
         services.AddScoped<GetCustomerBookingsHandler>();
         services.AddScoped<GetBookingDetailsHandler>();
     }

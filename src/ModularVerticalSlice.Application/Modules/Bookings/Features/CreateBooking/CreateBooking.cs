@@ -31,19 +31,6 @@ public record CreateBookingCommand(
     int Quantity,
     Guid ClientRequestId);
 
-/// <summary>
-/// Transitional alias kept to avoid breaking the current baseline while the
-/// Bookings flow is being realigned to the coordinated CreateBooking use case.
-/// </summary>
-/// <param name="EventId">The target event identifier.</param>
-/// <param name="Quantity">The number of tickets requested for the booking.</param>
-/// <param name="ClientRequestId">The client-side idempotency identifier.</param>
-public sealed record RequestBookingCommand(
-    Guid EventId,
-    int Quantity,
-    Guid ClientRequestId)
-    : CreateBookingCommand(EventId, Quantity, ClientRequestId);
-
 internal static class CreateBookingValidator
 {
     public static Result Validate(CreateBookingCommand command)
@@ -74,9 +61,6 @@ internal static class CreateBookingValidator
 
         return Result.Success();
     }
-
-    public static Result Validate(RequestBookingCommand command) =>
-        Validate((CreateBookingCommand)command);
 }
 
 /// <summary>
@@ -174,15 +158,6 @@ public sealed class CreateBookingHandler(
     }
 
     /// <summary>
-    /// Handles the transitional request-booking alias.
-    /// </summary>
-    [WolverineHandler]
-    public Task<Result<Guid>> HandleRequestBooking(
-        RequestBookingCommand command,
-        CancellationToken cancellationToken) =>
-        HandleCreateBooking((CreateBookingCommand)command, cancellationToken);
-
-    /// <summary>
     /// Determines whether an exception represents the authoritative booking idempotency collision.
     /// </summary>
     public static bool IsIdempotencyConstraintViolation(Exception exception)
@@ -204,7 +179,7 @@ public sealed class CreateBookingHandler(
 }
 
 /// <summary>
-/// Maps the baseline HTTP endpoint exposed by the create-booking slice.
+/// Maps the HTTP endpoint exposed by the create-booking slice.
 /// </summary>
 public static class CreateBookingEndpoint
 {
@@ -218,7 +193,7 @@ public static class CreateBookingEndpoint
             .WithTags("Bookings");
 
         group.MapPost("/", CreateBookingAsync)
-            .WithSummary("Creates a baseline booking request")
+            .WithSummary("Creates a booking request")
             .Produces<Guid>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status422UnprocessableEntity)

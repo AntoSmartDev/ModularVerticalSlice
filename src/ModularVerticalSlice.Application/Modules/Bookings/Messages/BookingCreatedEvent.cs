@@ -4,7 +4,7 @@ namespace ModularVerticalSlice.Application.Modules.Bookings.Messages;
 /// Published when a booking has been created and tickets have been reserved.
 /// </summary>
 /// <remarks>
-/// This event is the entry point for the future booking lifecycle saga and
+/// This event is the entry point for the booking lifecycle saga and
 /// represents the first durable handoff after immediate booking creation.
 /// </remarks>
 /// <param name="BookingId">The created booking identifier.</param>

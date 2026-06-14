@@ -8,7 +8,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Features.CreateEvent;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets;
-using ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets;
+using ModularVerticalSlice.Application.Modules.Catalog.Features.TicketReservation;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
@@ -18,7 +18,7 @@ using CreateEventSliceHandler = ModularVerticalSlice.Application.Modules.Catalog
 using GetEventDetailsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetEventDetails.GetEventDetailsHandler;
 using GetUpcomingEventsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvents.GetUpcomingEventsHandler;
 using ReleaseTicketsSliceHandler = ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets.ReleaseTicketsHandler;
-using TicketReservation = ModularVerticalSlice.Application.Modules.Catalog.Features.ReserveTickets.TicketReservation;
+using TicketReservation = ModularVerticalSlice.Application.Modules.Catalog.Features.TicketReservation.TicketReservation;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Catalog;
 
