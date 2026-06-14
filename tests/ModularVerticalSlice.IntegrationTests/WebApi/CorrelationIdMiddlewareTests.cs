@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Shared.Observability;
-using ModularVerticalSlice.WebApi.Infrastructure.Observability;
+using ModularVerticalSlice.WebApi.Infrastructure.Correlation;
 
 namespace ModularVerticalSlice.IntegrationTests.WebApi;
 

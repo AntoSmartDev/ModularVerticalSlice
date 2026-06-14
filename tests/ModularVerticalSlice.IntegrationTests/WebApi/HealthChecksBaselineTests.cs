@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Persistence;
-using ModularVerticalSlice.WebApi.Infrastructure.Observability;
+using ModularVerticalSlice.WebApi.Infrastructure.HealthChecks;
 
 namespace ModularVerticalSlice.IntegrationTests.WebApi;
 

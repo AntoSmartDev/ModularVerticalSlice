@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging.Abstractions;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Messages;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
-using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Persistence;
@@ -53,14 +52,14 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                 DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
-        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+        var route = PaymentProcessingTechnicalFailureRuntimeObservability.Describe(exception);
 
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName, route.PolicyName);
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.RuntimeRetryRoute, route.RouteName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName, route.PolicyName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.RuntimeRetryRoute, route.RouteName);
         Assert.True(route.UsesRuntimeRetry);
         Assert.False(route.UsesErrorQueue);
         Assert.Equal(
-            PaymentsTechnicalFailureRuntimeObservability.RuntimeRecoveryCooldowns,
+            PaymentProcessingTechnicalFailureRuntimeObservability.RuntimeRecoveryCooldowns,
             route.Cooldowns);
     }
 
@@ -100,10 +99,10 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                 DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
-        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+        var route = PaymentProcessingTechnicalFailureRuntimeObservability.Describe(exception);
 
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName, route.PolicyName);
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.ErrorQueueRoute, route.RouteName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName, route.PolicyName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.ErrorQueueRoute, route.RouteName);
         Assert.False(route.UsesRuntimeRetry);
         Assert.True(route.UsesErrorQueue);
         Assert.Empty(route.Cooldowns);
@@ -186,7 +185,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                 DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
-        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+        var route = PaymentProcessingTechnicalFailureRuntimeObservability.Describe(exception);
 
         Assert.Equal(3, route.Cooldowns.Count);
         Assert.Equal(TimeSpan.FromSeconds(1), route.Cooldowns[0]);
@@ -228,7 +227,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
         return bus;
     }
 
-    private static async Task<PaymentsTechnicalFailureRuntimeRoute> ExecuteAndDescribeTechnicalFailure(
+    private static async Task<PaymentProcessingTechnicalFailureRuntimeRoute> ExecuteAndDescribeTechnicalFailure(
         string userId)
     {
         await using var db = CreateDbContext();
@@ -261,7 +260,7 @@ public class PaymentsRuntimeRecoveryIntegrationBaselineTests
                 DateTimeOffset.MaxValue),
                 TestContext.Current.CancellationToken));
 
-        return PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+        return PaymentProcessingTechnicalFailureRuntimeObservability.Describe(exception);
     }
 
     private sealed class FixedTimeProvider(DateTimeOffset utcNow) : TimeProvider

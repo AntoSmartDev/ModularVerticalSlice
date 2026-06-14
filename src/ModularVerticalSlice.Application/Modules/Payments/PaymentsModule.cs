@@ -19,10 +19,10 @@ public sealed class PaymentsModule : IApplicationBoundary
     /// <inheritdoc />
     public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddOptions<PaymentsCircuitBreakerOptions>()
-            .Bind(configuration.GetSection(PaymentsCircuitBreakerOptions.SectionName))
+        services.AddOptions<PaymentProcessingCircuitBreakerOptions>()
+            .Bind(configuration.GetSection(PaymentProcessingCircuitBreakerOptions.SectionName))
             .Validate(
-                options => PaymentsCircuitBreakerOptions.Validate(options).Succeeded,
+                options => PaymentProcessingCircuitBreakerOptions.Validate(options).Succeeded,
                 "Payments circuit-breaker values are invalid.")
             .ValidateOnStart();
 

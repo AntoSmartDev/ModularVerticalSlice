@@ -1,6 +1,6 @@
 using ModularVerticalSlice.Application.Shared.Security;
 
-namespace ModularVerticalSlice.WebApi.Infrastructure.Authentication;
+namespace ModularVerticalSlice.WebApi.Infrastructure.Authorization;
 
 /// <summary>
 /// Configures the WebApi authorization boundary.

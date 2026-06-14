@@ -22,6 +22,7 @@ using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.WebApi;
 using ModularVerticalSlice.WebApi.Infrastructure.Authentication;
+using ModularVerticalSlice.WebApi.Infrastructure.Authorization;
 using Wolverine;
 
 namespace ModularVerticalSlice.IntegrationTests.WebApi;

@@ -1,11 +1,11 @@
 using Microsoft.Extensions.Options;
 
-namespace ModularVerticalSlice.Application.Modules.Payments;
+namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 
 /// <summary>
 /// Configures the listener circuit breaker for the durable Payments processing queue.
 /// </summary>
-public sealed class PaymentsCircuitBreakerOptions
+public sealed class PaymentProcessingCircuitBreakerOptions
 {
     /// <summary>
     /// Gets the configuration section used by the Payments circuit breaker.
@@ -40,7 +40,7 @@ public sealed class PaymentsCircuitBreakerOptions
     /// <summary>
     /// Validates the breaker values independently from other module settings.
     /// </summary>
-    public static ValidateOptionsResult Validate(PaymentsCircuitBreakerOptions options)
+    public static ValidateOptionsResult Validate(PaymentProcessingCircuitBreakerOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
@@ -67,7 +67,7 @@ public sealed class PaymentsCircuitBreakerOptions
     /// Validates the breaker values and their relationship with the booking payment window.
     /// </summary>
     public static ValidateOptionsResult Validate(
-        PaymentsCircuitBreakerOptions options,
+        PaymentProcessingCircuitBreakerOptions options,
         TimeSpan paymentWindow)
     {
         var localValidation = Validate(options);

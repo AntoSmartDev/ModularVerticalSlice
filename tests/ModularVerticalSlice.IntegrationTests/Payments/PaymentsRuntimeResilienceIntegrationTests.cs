@@ -110,7 +110,7 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
         var listener = (IListenerCircuit)host.Services
             .GetRequiredService<IWolverineRuntime>()
             .Endpoints
-            .AgentForLocalQueue(PaymentsCircuitBreakerOptions.QueueName);
+            .AgentForLocalQueue(PaymentProcessingCircuitBreakerOptions.QueueName);
         var scenario = NewScenario("breaker");
         var secondFailure = NewScenario("breaker-second-failure");
         var pausedProbe = NewScenario("breaker-paused-probe");

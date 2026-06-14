@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ModularVerticalSlice.Persistence;
 
-namespace ModularVerticalSlice.WebApi.Infrastructure.Observability;
+namespace ModularVerticalSlice.WebApi.Infrastructure.HealthChecks;
 
 /// <summary>
 /// Reports readiness based on the application's PostgreSQL connectivity.
