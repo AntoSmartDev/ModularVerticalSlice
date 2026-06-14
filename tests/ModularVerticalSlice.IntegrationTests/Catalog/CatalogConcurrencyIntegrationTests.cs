@@ -11,7 +11,7 @@ using ModularVerticalSlice.Application.Modules.Catalog;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.SharedKernel;
@@ -54,7 +54,7 @@ public sealed class CatalogConcurrencyIntegrationTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules =
+        IApplicationBoundary[] boundaries =
         [
             new CatalogModule(),
             new BookingsModule(),
@@ -62,7 +62,7 @@ public sealed class CatalogConcurrencyIntegrationTests
             new BookingConfirmationDeliveryModule()
         ];
 
-        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        builder.Services.AddApplicationBoundaries(builder.Configuration, boundaries);
         builder.Services.AddPersistence();
         builder.Services.AddSingleton<ICurrentUserContext>(new TestCurrentUserContext("concurrent-user"));
         builder.UseWolverine(options =>

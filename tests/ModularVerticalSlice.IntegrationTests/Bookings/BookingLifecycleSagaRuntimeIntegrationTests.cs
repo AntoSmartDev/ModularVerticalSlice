@@ -13,7 +13,7 @@ using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.WebApi;
 using Wolverine;
@@ -151,14 +151,14 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
             ["Bookings:Lifecycle:PaymentWindow"] = "01:00:00"
         });
 
-        IModule[] modules =
+        IApplicationBoundary[] boundaries =
         [
             new BookingsModule(),
             new PaymentsModule(),
             new BookingConfirmationDeliveryModule()
         ];
 
-        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        builder.Services.AddApplicationBoundaries(builder.Configuration, boundaries);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
 
@@ -312,8 +312,8 @@ public sealed class PersistenceRegistrationScopeTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
-        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        IApplicationBoundary[] boundaries = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
+        builder.Services.AddApplicationBoundaries(builder.Configuration, boundaries);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
 
@@ -366,8 +366,8 @@ public sealed class BookingLifecycleHandlerDirectCommitTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
-        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        IApplicationBoundary[] boundaries = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
+        builder.Services.AddApplicationBoundaries(builder.Configuration, boundaries);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
 

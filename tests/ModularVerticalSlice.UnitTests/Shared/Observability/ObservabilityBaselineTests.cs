@@ -1,9 +1,10 @@
 using ModularVerticalSlice.Application.Shared.Observability;
 
-namespace ModularVerticalSlice.UnitTests.Modules.Common.Observability;
+namespace ModularVerticalSlice.UnitTests.Shared.Observability;
 
 /// <summary>
-/// Verifies the minimal shared observability abstractions used by modules.
+/// Verifies the minimal shared observability abstractions used by application
+/// boundaries.
 /// </summary>
 public class ObservabilityBaselineTests
 {

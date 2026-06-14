@@ -8,7 +8,7 @@ using ModularVerticalSlice.Application.Modules.Catalog.Features.GetUpcomingEvent
 using ModularVerticalSlice.Application.Modules.Catalog.Features.ReleaseTickets;
 using ModularVerticalSlice.Application.Modules.Catalog.Features.TicketReservation;
 using ModularVerticalSlice.Application.Modules.Catalog.Contracts;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 
 namespace ModularVerticalSlice.Application.Modules.Catalog;
 
@@ -16,13 +16,13 @@ namespace ModularVerticalSlice.Application.Modules.Catalog;
 /// Registers services and endpoints exposed by the Catalog module.
 /// </summary>
 /// <remarks>
-/// The module class is the entry point used by the WebApi composition root.
+/// The boundary class is the entry point used by the WebApi composition root.
 /// It must not contain business logic.
 /// </remarks>
-public sealed class CatalogModule : IModule
+public sealed class CatalogModule : IApplicationBoundary
 {
     /// <inheritdoc />
-    public void RegisterModule(IServiceCollection services, IConfiguration configuration)
+    public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<CreateEventHandler>();

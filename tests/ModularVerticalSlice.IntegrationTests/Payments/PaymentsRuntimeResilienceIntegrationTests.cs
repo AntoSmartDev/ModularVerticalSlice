@@ -13,7 +13,7 @@ using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.WebApi;
 using Npgsql;
@@ -233,8 +233,8 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
             ["Payments:CircuitBreaker:PauseTime"] = "00:00:03"
         });
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
-        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        IApplicationBoundary[] boundaries = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
+        builder.Services.AddApplicationBoundaries(builder.Configuration, boundaries);
         builder.Services.AddPersistence();
         builder.Services.AddSingleton<ObservablePaymentGateway>();
         builder.Services.AddSingleton<IPaymentGateway>(services =>
