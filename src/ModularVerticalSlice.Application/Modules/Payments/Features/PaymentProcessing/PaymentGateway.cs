@@ -3,14 +3,25 @@ using ModularVerticalSlice.Application.Modules.Payments.Domain;
 namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 
 /// <summary>
-/// Deterministic baseline gateway used until a real provider integration is
-/// introduced.
+/// Represents the provider-facing seam used by the Payments module to decide
+/// the baseline outcome of a payment request.
+/// </summary>
+public interface IPaymentGateway
+{
+    /// <summary>
+    /// Processes the payment request through the current gateway seam.
+    /// </summary>
+    PaymentOutcomeDecision Process(string userId, int quantity);
+}
+
+/// <summary>
+/// Deterministic gateway used until a real provider integration is introduced.
 /// </summary>
 public sealed class FakePaymentGateway : IPaymentGateway
 {
     /// <summary>
-    /// Delegates the baseline payment outcome to the deterministic policy so
-    /// the first-release behavior stays stable.
+    /// Delegates the payment outcome to the deterministic policy so the
+    /// current behavior stays stable.
     /// </summary>
     public PaymentOutcomeDecision Process(string userId, int quantity)
     {

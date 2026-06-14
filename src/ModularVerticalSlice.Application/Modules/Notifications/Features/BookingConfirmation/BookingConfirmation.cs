@@ -4,6 +4,15 @@ using Wolverine.Attributes;
 namespace ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
 
 /// <summary>
+/// Contains the information required to send a booking-confirmation email.
+/// </summary>
+public sealed record BookingConfirmationEmail(
+    Guid BookingId,
+    Guid EventId,
+    string UserId,
+    DateTimeOffset ConfirmedAt);
+
+/// <summary>
 /// Handles booking confirmation notifications.
 /// </summary>
 public sealed class BookingConfirmationHandler(IBookingConfirmationEmailSender emailSender)

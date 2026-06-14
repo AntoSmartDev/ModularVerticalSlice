@@ -12,10 +12,64 @@ using Wolverine.Attributes;
 namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 
 /// <summary>
-/// Handles the baseline payment-processing workflow for the Payments module.
+/// Validates the ProcessPayment command locally inside the feature.
+/// </summary>
+public static class PaymentProcessingValidators
+{
+    /// <summary>
+    /// Validates the payment-processing command shape.
+    /// </summary>
+    public static Result Validate(ProcessPaymentCommand command)
+    {
+        if (command.BookingId == Guid.Empty)
+        {
+            return Result.Failure(
+                Error.Validation(
+                    "Payments.InvalidBookingId",
+                    "A valid booking identifier is required."));
+        }
+
+        if (command.EventId == Guid.Empty)
+        {
+            return Result.Failure(
+                Error.Validation(
+                    "Payments.InvalidEventId",
+                    "A valid event identifier is required."));
+        }
+
+        if (command.Quantity <= 0)
+        {
+            return Result.Failure(
+                Error.Validation(
+                    "Payments.InvalidQuantity",
+                    "The payment quantity must be greater than zero."));
+        }
+
+        if (string.IsNullOrWhiteSpace(command.UserId))
+        {
+            return Result.Failure(
+                Error.Validation(
+                    "Payments.InvalidUserId",
+                    "A payment owner is required."));
+        }
+
+        if (command.PaymentDeadline == default)
+        {
+            return Result.Failure(
+                Error.Validation(
+                    "Payments.InvalidPaymentDeadline",
+                    "A valid payment deadline is required."));
+        }
+
+        return Result.Success();
+    }
+}
+
+/// <summary>
+/// Handles the payment-processing workflow for the Payments module.
 /// </summary>
 /// <remarks>
-/// This handler keeps the first release deliberately small: it evaluates a
+/// This handler keeps the implementation deliberately small: it evaluates a
 /// deterministic business outcome, creates the minimal payment record and
 /// publishes the resulting success or business-failure event. Technical
 /// failures are surfaced as a dedicated exception so Wolverine can own retry
@@ -29,7 +83,7 @@ public sealed class PaymentProcessingHandler(
     ILogger<PaymentProcessingHandler> logger)
 {
     /// <summary>
-    /// Handles the baseline ProcessPayment command.
+    /// Handles the ProcessPayment command.
     /// </summary>
     [WolverineHandler]
     public async Task<Result> HandleProcessPayment(

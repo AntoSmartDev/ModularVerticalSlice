@@ -3,7 +3,18 @@ using System.Collections.Concurrent;
 namespace ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
 
 /// <summary>
-/// Records confirmation emails in memory for the current baseline.
+/// Sends booking-confirmation email requests owned by Notifications.
+/// </summary>
+public interface IBookingConfirmationEmailSender
+{
+    /// <summary>
+    /// Sends a booking-confirmation email.
+    /// </summary>
+    Task SendAsync(BookingConfirmationEmail email, CancellationToken cancellationToken);
+}
+
+/// <summary>
+/// Records confirmation emails in memory for the current implementation.
 /// </summary>
 public sealed class FakeBookingConfirmationEmailSender : IBookingConfirmationEmailSender
 {
