@@ -1,7 +1,8 @@
-namespace ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
+namespace ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 
 /// <summary>
-/// Represents a technical notification-delivery failure owned by runtime recovery.
+/// Represents a technical booking-confirmation delivery failure owned by
+/// runtime recovery.
 /// </summary>
 public sealed class NotificationDeliveryException(string message, bool isTransient) : Exception(message)
 {

@@ -4,8 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
-using ModularVerticalSlice.Application.Modules.Notifications;
-using ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Shared.Modules;
 using ModularVerticalSlice.Persistence;
@@ -14,10 +13,11 @@ using Wolverine;
 using Wolverine.Runtime;
 using Wolverine.Tracking;
 
-namespace ModularVerticalSlice.IntegrationTests.Notifications;
+namespace ModularVerticalSlice.IntegrationTests.Delivery.BookingConfirmation;
 
 /// <summary>
-/// Proves notification idempotency and recovery through Wolverine and PostgreSQL.
+/// Proves booking-confirmation delivery idempotency and recovery through
+/// Wolverine and PostgreSQL.
 /// </summary>
 public sealed class BookingConfirmationRuntimeIntegrationTests
 {
@@ -79,7 +79,7 @@ public sealed class BookingConfirmationRuntimeIntegrationTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new NotificationsModule()];
+        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
         builder.Services.AddApplicationModules(builder.Configuration, modules);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));

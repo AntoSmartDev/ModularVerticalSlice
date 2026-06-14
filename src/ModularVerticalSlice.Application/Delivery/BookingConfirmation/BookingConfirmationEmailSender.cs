@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 
-namespace ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
+namespace ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 
 /// <summary>
-/// Sends booking-confirmation email requests owned by Notifications.
+/// Sends booking-confirmation email requests owned by the delivery boundary.
 /// </summary>
 public interface IBookingConfirmationEmailSender
 {

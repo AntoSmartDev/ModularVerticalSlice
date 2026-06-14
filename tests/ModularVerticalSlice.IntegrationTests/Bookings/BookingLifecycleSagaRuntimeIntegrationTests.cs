@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,7 +9,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
-using ModularVerticalSlice.Application.Modules.Notifications;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities;
@@ -155,7 +155,7 @@ public sealed class BookingLifecycleSagaRuntimeIntegrationTests
         [
             new BookingsModule(),
             new PaymentsModule(),
-            new NotificationsModule()
+            new BookingConfirmationDeliveryModule()
         ];
 
         builder.Services.AddApplicationModules(builder.Configuration, modules);
@@ -312,7 +312,7 @@ public sealed class PersistenceRegistrationScopeTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new NotificationsModule()];
+        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
         builder.Services.AddApplicationModules(builder.Configuration, modules);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));
@@ -366,7 +366,7 @@ public sealed class BookingLifecycleHandlerDirectCommitTests
         var builder = Host.CreateApplicationBuilder();
         builder.Configuration.AddJsonFile("appsettings.Development.json", optional: false);
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new NotificationsModule()];
+        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
         builder.Services.AddApplicationModules(builder.Configuration, modules);
         builder.Services.AddPersistence();
         builder.UseWolverine(options => options.ConfigureApplicationMessaging(builder.Configuration));

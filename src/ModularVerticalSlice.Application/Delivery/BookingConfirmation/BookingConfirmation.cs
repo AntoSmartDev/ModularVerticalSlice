@@ -1,7 +1,7 @@
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using Wolverine.Attributes;
 
-namespace ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
+namespace ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 
 /// <summary>
 /// Contains the information required to send a booking-confirmation email.

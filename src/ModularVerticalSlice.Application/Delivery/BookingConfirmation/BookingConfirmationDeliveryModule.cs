@@ -1,19 +1,19 @@
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
 using ModularVerticalSlice.Application.Shared.Modules;
 
-namespace ModularVerticalSlice.Application.Modules.Notifications;
+namespace ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 
 /// <summary>
-/// Registers services and endpoints exposed by the Notifications module.
+/// Registers services and endpoints exposed by the booking-confirmation
+/// delivery boundary.
 /// </summary>
 /// <remarks>
 /// The module class is the entry point used by the WebApi composition root.
 /// It must not contain business logic.
 /// </remarks>
-public sealed class NotificationsModule : IModule
+public sealed class BookingConfirmationDeliveryModule : IModule
 {
     /// <inheritdoc />
     public void RegisterModule(IServiceCollection services, IConfiguration configuration)

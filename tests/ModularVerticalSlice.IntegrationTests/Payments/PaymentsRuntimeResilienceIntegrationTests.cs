@@ -7,8 +7,7 @@ using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
-using ModularVerticalSlice.Application.Modules.Notifications;
-using ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
@@ -234,7 +233,7 @@ public sealed class PaymentsRuntimeResilienceIntegrationTests
             ["Payments:CircuitBreaker:PauseTime"] = "00:00:03"
         });
 
-        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new NotificationsModule()];
+        IModule[] modules = [new BookingsModule(), new PaymentsModule(), new BookingConfirmationDeliveryModule()];
         builder.Services.AddApplicationModules(builder.Configuration, modules);
         builder.Services.AddPersistence();
         builder.Services.AddSingleton<ObservablePaymentGateway>();

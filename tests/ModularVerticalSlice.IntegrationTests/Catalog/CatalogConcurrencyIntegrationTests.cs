@@ -9,7 +9,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
-using ModularVerticalSlice.Application.Modules.Notifications;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Shared.Modules;
 using ModularVerticalSlice.Application.Shared.Security;
@@ -59,7 +59,7 @@ public sealed class CatalogConcurrencyIntegrationTests
             new CatalogModule(),
             new BookingsModule(),
             new PaymentsModule(),
-            new NotificationsModule()
+            new BookingConfirmationDeliveryModule()
         ];
 
         builder.Services.AddApplicationModules(builder.Configuration, modules);

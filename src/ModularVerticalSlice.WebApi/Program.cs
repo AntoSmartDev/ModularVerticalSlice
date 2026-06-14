@@ -1,7 +1,7 @@
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Catalog;
 using ModularVerticalSlice.Application.Shared.Modules;
-using ModularVerticalSlice.Application.Modules.Notifications;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
@@ -19,7 +19,7 @@ IModule[] modules =
     new CatalogModule(),
     new BookingsModule(),
     new PaymentsModule(),
-    new NotificationsModule()
+    new BookingConfirmationDeliveryModule()
 ];
 
 builder.Host.UseWolverine(options =>

@@ -5,13 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Catalog;
 using ModularVerticalSlice.Application.Shared.Modules;
-using ModularVerticalSlice.Application.Modules.Notifications;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 
 namespace ModularVerticalSlice.UnitTests.Modules;
 
 /// <summary>
-/// Verifies the baseline module bootstrap classes.
+/// Verifies the baseline application entry-point bootstrap classes.
 /// </summary>
 public class ModuleBootstrapTests
 {
@@ -26,7 +26,7 @@ public class ModuleBootstrapTests
             new CatalogModule(),
             new BookingsModule(),
             new PaymentsModule(),
-            new NotificationsModule()
+            new BookingConfirmationDeliveryModule()
         ];
 
         Assert.Equal(4, modules.Length);
@@ -48,7 +48,7 @@ public class ModuleBootstrapTests
             new CatalogModule(),
             new BookingsModule(),
             new PaymentsModule(),
-            new NotificationsModule()
+            new BookingConfirmationDeliveryModule()
         ];
 
         foreach (var module in modules)

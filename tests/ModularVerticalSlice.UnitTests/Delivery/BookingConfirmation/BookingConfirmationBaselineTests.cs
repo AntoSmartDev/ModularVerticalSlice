@@ -1,12 +1,11 @@
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
-using ModularVerticalSlice.Application.Modules.Notifications;
-using ModularVerticalSlice.Application.Modules.Notifications.Features.BookingConfirmation;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 
-namespace ModularVerticalSlice.UnitTests.Modules.Notifications;
+namespace ModularVerticalSlice.UnitTests.Delivery.BookingConfirmation;
 
 /// <summary>
-/// Verifies the baseline booking-confirmation notification behavior.
+/// Verifies the baseline booking-confirmation delivery behavior.
 /// </summary>
 public sealed class BookingConfirmationBaselineTests
 {
@@ -31,10 +30,10 @@ public sealed class BookingConfirmationBaselineTests
     }
 
     [Fact]
-    public void NotificationsModule_Should_Register_Observable_Fake_Email_Sender()
+    public void DeliveryModule_Should_Register_Observable_Fake_Email_Sender()
     {
         var services = new ServiceCollection();
-        new NotificationsModule().RegisterModule(services, configuration: null!);
+        new BookingConfirmationDeliveryModule().RegisterModule(services, configuration: null!);
 
         using var provider = services.BuildServiceProvider();
 

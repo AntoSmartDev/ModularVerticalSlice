@@ -26,8 +26,7 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Catalog.Domain",
                 "ModularVerticalSlice.Application.Modules.Payments.Features",
                 "ModularVerticalSlice.Application.Modules.Payments.Domain",
-                "ModularVerticalSlice.Application.Modules.Notifications.Features",
-                "ModularVerticalSlice.Application.Modules.Notifications.Domain")
+                "ModularVerticalSlice.Application.Delivery.BookingConfirmation")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));
@@ -43,8 +42,7 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Bookings.Domain",
                 "ModularVerticalSlice.Application.Modules.Payments.Features",
                 "ModularVerticalSlice.Application.Modules.Payments.Domain",
-                "ModularVerticalSlice.Application.Modules.Notifications.Features",
-                "ModularVerticalSlice.Application.Modules.Notifications.Domain")
+                "ModularVerticalSlice.Application.Delivery.BookingConfirmation")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));
@@ -60,18 +58,17 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Bookings.Domain",
                 "ModularVerticalSlice.Application.Modules.Catalog.Features",
                 "ModularVerticalSlice.Application.Modules.Catalog.Domain",
-                "ModularVerticalSlice.Application.Modules.Notifications.Features",
-                "ModularVerticalSlice.Application.Modules.Notifications.Domain")
+                "ModularVerticalSlice.Application.Delivery.BookingConfirmation")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));
     }
 
     [Fact]
-    public void Notifications_Does_Not_Depend_On_Other_Module_Internals()
+    public void BookingConfirmation_Delivery_Does_Not_Depend_On_Module_Internals()
     {
         var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace("ModularVerticalSlice.Application.Modules.Notifications")
+            .That().ResideInNamespace("ModularVerticalSlice.Application.Delivery.BookingConfirmation")
             .ShouldNot().HaveDependencyOnAny(
                 "ModularVerticalSlice.Application.Modules.Bookings.Features",
                 "ModularVerticalSlice.Application.Modules.Bookings.Domain",
@@ -93,9 +90,7 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Catalog.Persistence",
                 "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities",
                 "ModularVerticalSlice.Application.Modules.Payments.Persistence",
-                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));
@@ -110,9 +105,7 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Catalog.Persistence",
                 "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities",
                 "ModularVerticalSlice.Application.Modules.Payments.Persistence",
-                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));
@@ -127,9 +120,7 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Bookings.Persistence",
                 "ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities",
                 "ModularVerticalSlice.Application.Modules.Payments.Persistence",
-                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+                "ModularVerticalSlice.Application.Modules.Payments.Persistence.Entities")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));
@@ -144,19 +135,17 @@ public sealed class ProjectBoundaryTests
                 "ModularVerticalSlice.Application.Modules.Bookings.Persistence",
                 "ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities",
                 "ModularVerticalSlice.Application.Modules.Catalog.Persistence",
-                "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence",
-                "ModularVerticalSlice.Application.Modules.Notifications.Persistence.Entities")
+                "ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities")
             .GetResult();
 
         Assert.True(result.IsSuccessful, FormatViolations(result));
     }
 
     [Fact]
-    public void Notifications_Features_Do_Not_Depend_On_Other_Module_Persistence()
+    public void BookingConfirmation_Delivery_Does_Not_Depend_On_Module_Persistence()
     {
         var result = Types.InAssembly(ApplicationAssembly)
-            .That().ResideInNamespace("ModularVerticalSlice.Application.Modules.Notifications.Features")
+            .That().ResideInNamespace("ModularVerticalSlice.Application.Delivery.BookingConfirmation")
             .ShouldNot().HaveDependencyOnAny(
                 "ModularVerticalSlice.Application.Modules.Bookings.Persistence",
                 "ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities",

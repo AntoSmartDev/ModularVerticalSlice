@@ -8,7 +8,7 @@ using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessi
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
 using ModularVerticalSlice.Application.Modules.Payments.Persistence;
 using ModularVerticalSlice.Application.Modules.Bookings.Messages;
-using ModularVerticalSlice.Application.Modules.Notifications;
+using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Shared.Observability;
 using ModularVerticalSlice.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -50,7 +50,7 @@ public static class ApplicationMessagingExtensions
         options.Policies.AutoApplyTransactions();
         options.AddSagaType<BookingLifecycleSaga>("booking_lifecycle_sagas");
         PaymentsRuntimeRecoveryPolicies.Configure(options);
-        NotificationsRuntimeRecoveryPolicies.Configure(options);
+        BookingConfirmationDeliveryRuntimeRecoveryPolicies.Configure(options);
         options.LocalQueueFor<BookingConfirmedEvent>().UseDurableInbox();
         options.PublishMessage<ProcessPaymentCommand>()
             .ToLocalQueue(PaymentsCircuitBreakerOptions.QueueName);
