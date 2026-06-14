@@ -4,6 +4,17 @@
 * text=auto
 
 ###############################################################################
+# Explicit .NET / Visual Studio line ending policy.
+###############################################################################
+*.cs text eol=crlf
+*.csproj text eol=crlf
+*.props text eol=crlf
+*.targets text eol=crlf
+*.sln text eol=crlf
+*.slnx text eol=crlf
+*.json text eol=crlf
+
+###############################################################################
 # Set default behavior for command prompt diff.
 #
 # This is need for earlier builds of msysgit that does not have it on by
