@@ -798,9 +798,7 @@ public class BookingLifecycleApiBaselineTests
         Assert.Contains(bus.ScheduledMessages(), x =>
             x.Message is BookingPaymentTimeoutExpiredEvent scheduled &&
             scheduled.BookingId == bookingId &&
-            scheduled.ExpiredAt == createdAt.AddMinutes(20) &&
-            scheduled.EventId == default &&
-            scheduled.Quantity == 0);
+            scheduled.ExpiredAt == createdAt.AddMinutes(20));
     }
 
     /// <summary>

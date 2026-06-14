@@ -13,3 +13,9 @@ public sealed record ReleaseTicketsCommand(
     Guid EventId,
     int Quantity,
     Guid BookingId);
+
+/// <summary>
+/// Requests the current ticket price for a specific catalog event.
+/// </summary>
+/// <param name="EventId">The target event identifier.</param>
+public sealed record GetEventTicketPriceQuery(Guid EventId);
