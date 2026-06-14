@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 
 namespace ModularVerticalSlice.Application.Modules.Payments;
 
@@ -11,13 +11,13 @@ namespace ModularVerticalSlice.Application.Modules.Payments;
 /// Registers services and endpoints exposed by the Payments module.
 /// </summary>
 /// <remarks>
-/// The module class is the entry point used by the WebApi composition root.
+/// The boundary class is the entry point used by the WebApi composition root.
 /// It must not contain business logic.
 /// </remarks>
-public sealed class PaymentsModule : IModule
+public sealed class PaymentsModule : IApplicationBoundary
 {
     /// <inheritdoc />
-    public void RegisterModule(IServiceCollection services, IConfiguration configuration)
+    public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.AddOptions<PaymentsCircuitBreakerOptions>()
             .Bind(configuration.GetSection(PaymentsCircuitBreakerOptions.SectionName))

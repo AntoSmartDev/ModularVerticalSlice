@@ -33,7 +33,7 @@ public sealed class BookingConfirmationBaselineTests
     public void DeliveryModule_Should_Register_Observable_Fake_Email_Sender()
     {
         var services = new ServiceCollection();
-        new BookingConfirmationDeliveryModule().RegisterModule(services, configuration: null!);
+        new BookingConfirmationDeliveryModule().RegisterServices(services, configuration: null!);
 
         using var provider = services.BuildServiceProvider();
 

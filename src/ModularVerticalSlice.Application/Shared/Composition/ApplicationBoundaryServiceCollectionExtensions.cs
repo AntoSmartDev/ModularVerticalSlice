@@ -1,32 +1,32 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ModularVerticalSlice.Application.Shared.Modules;
+namespace ModularVerticalSlice.Application.Shared.Composition;
 
 /// <summary>
-/// Provides service registration helpers for application modules.
+/// Provides service registration helpers for application boundaries.
 /// </summary>
-public static class ModuleServiceCollectionExtensions
+public static class ApplicationBoundaryServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the services exposed by each application module.
+    /// Registers the services exposed by each application boundary.
     /// </summary>
     /// <param name="services">The service collection used by the application host.</param>
     /// <param name="configuration">The application configuration.</param>
-    /// <param name="modules">The modules to register.</param>
+    /// <param name="boundaries">The boundaries to register.</param>
     /// <returns>The same service collection for chaining.</returns>
-    public static IServiceCollection AddApplicationModules(
+    public static IServiceCollection AddApplicationBoundaries(
         this IServiceCollection services,
         IConfiguration configuration,
-        IEnumerable<IModule> modules)
+        IEnumerable<IApplicationBoundary> boundaries)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
-        ArgumentNullException.ThrowIfNull(modules);
+        ArgumentNullException.ThrowIfNull(boundaries);
 
-        foreach (var module in modules)
+        foreach (var boundary in boundaries)
         {
-            module.RegisterModule(services, configuration);
+            boundary.RegisterServices(services, configuration);
         }
 
         return services;

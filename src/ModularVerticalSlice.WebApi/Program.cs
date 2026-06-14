@@ -1,6 +1,6 @@
 using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Catalog;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Shared.Security;
@@ -14,7 +14,7 @@ using Wolverine;
 
 var builder = WebApplication.CreateBuilder(args);
 
-IModule[] modules =
+IApplicationBoundary[] boundaries =
 [
     new CatalogModule(),
     new BookingsModule(),
@@ -47,7 +47,7 @@ builder.Services.AddOpenTelemetry()
 builder.Services.AddWebApiAuthentication(builder.Configuration, builder.Environment);
 builder.Services.AddWebApiAuthorization();
 builder.Services.AddProblemDetails();
-builder.Services.AddApplicationModules(builder.Configuration, modules);
+builder.Services.AddApplicationBoundaries(builder.Configuration, boundaries);
 builder.Services.AddPersistence();
 builder.Services.AddOpenApi();
 
@@ -65,7 +65,7 @@ app.UseAuthorization();
 
 app.MapApplicationHealthEndpoints();
 
-app.MapApplicationModules(modules);
+app.MapApplicationBoundaries(boundaries);
 app.MapGet("/", () => Results.Text("ModularVerticalSlice.WebApi"));
 
 app.Run();

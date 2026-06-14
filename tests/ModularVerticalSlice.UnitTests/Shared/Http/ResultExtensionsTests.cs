@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Shared.Http;
 using ModularVerticalSlice.SharedKernel;
 
-namespace ModularVerticalSlice.UnitTests.Modules.Common.Http;
+namespace ModularVerticalSlice.UnitTests.Shared.Http;
 
 /// <summary>
 /// Verifies the HTTP mapping behavior of <see cref="ModularVerticalSlice.Application.Shared.Http.ResultExtensions" />.

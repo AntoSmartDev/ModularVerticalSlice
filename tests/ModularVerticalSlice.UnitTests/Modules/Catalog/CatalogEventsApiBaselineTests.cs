@@ -222,7 +222,7 @@ public class CatalogEventsApiBaselineTests
         var builder = WebApplication.CreateBuilder();
         var module = new CatalogModule();
 
-        module.RegisterModule(builder.Services, builder.Configuration);
+        module.RegisterServices(builder.Services, builder.Configuration);
 
         var app = builder.Build();
         module.MapEndpoints(app);

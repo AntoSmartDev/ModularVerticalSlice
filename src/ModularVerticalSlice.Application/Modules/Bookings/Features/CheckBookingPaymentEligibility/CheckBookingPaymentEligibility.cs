@@ -5,12 +5,12 @@ using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.SharedKernel;
 using Wolverine.Attributes;
 
-namespace ModularVerticalSlice.Application.Modules.Bookings.Features.CheckPaymentEligibility;
+namespace ModularVerticalSlice.Application.Modules.Bookings.Features.CheckBookingPaymentEligibility;
 
 /// <summary>
 /// Answers whether Bookings still considers a booking eligible for payment.
 /// </summary>
-public sealed class CheckPaymentEligibilityHandler(IBookingReadDbContextSlice readDb)
+public sealed class CheckBookingPaymentEligibilityHandler(IBookingReadDbContextSlice readDb)
 {
     /// <summary>
     /// Returns success only while the target booking exists and remains pending.

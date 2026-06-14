@@ -2,22 +2,24 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace ModularVerticalSlice.Application.Shared.Modules;
+namespace ModularVerticalSlice.Application.Shared.Composition;
 
 /// <summary>
-/// Defines the bootstrap contract used to compose a business module into the host.
+/// Defines the bootstrap contract used to compose an application boundary into
+/// the host.
 /// </summary>
-public interface IModule
+public interface IApplicationBoundary
 {
     /// <summary>
-    /// Registers module-specific services, options and infrastructure into the service collection.
+    /// Registers boundary-specific services, options and infrastructure into
+    /// the service collection.
     /// </summary>
     /// <param name="services">The service collection used by the application host.</param>
     /// <param name="configuration">The application configuration.</param>
-    void RegisterModule(IServiceCollection services, IConfiguration configuration);
+    void RegisterServices(IServiceCollection services, IConfiguration configuration);
 
     /// <summary>
-    /// Maps the HTTP endpoints exposed by the module.
+    /// Maps the HTTP endpoints exposed by the boundary.
     /// </summary>
     /// <param name="endpoints">The route builder used by the application host.</param>
     void MapEndpoints(IEndpointRouteBuilder endpoints);

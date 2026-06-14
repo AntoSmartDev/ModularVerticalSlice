@@ -1,9 +1,10 @@
 using ModularVerticalSlice.Application.Shared.Security;
 
-namespace ModularVerticalSlice.UnitTests.Modules.Common.Security;
+namespace ModularVerticalSlice.UnitTests.Shared.Security;
 
 /// <summary>
-/// Verifies the minimal shared security abstractions used by modules.
+/// Verifies the minimal shared security abstractions used by application
+/// boundaries.
 /// </summary>
 public class SecurityBaselineTests
 {

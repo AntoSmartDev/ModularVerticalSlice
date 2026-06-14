@@ -3,10 +3,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
-using ModularVerticalSlice.Application.Modules.Bookings.Features.CheckPaymentEligibility;
+using ModularVerticalSlice.Application.Modules.Bookings.Features.CheckBookingPaymentEligibility;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetCustomerBookings;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 
 namespace ModularVerticalSlice.Application.Modules.Bookings;
 
@@ -14,20 +14,20 @@ namespace ModularVerticalSlice.Application.Modules.Bookings;
 /// Registers services and endpoints exposed by the Bookings module.
 /// </summary>
 /// <remarks>
-/// The module class is the entry point used by the WebApi composition root.
+/// The boundary class is the entry point used by the WebApi composition root.
 /// It must not contain business logic.
 /// </remarks>
-public sealed class BookingsModule : IModule
+public sealed class BookingsModule : IApplicationBoundary
 {
     /// <inheritdoc />
-    public void RegisterModule(IServiceCollection services, IConfiguration configuration)
+    public void RegisterServices(IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<BookingLifecycleOptions>(
             configuration.GetSection("Bookings:Lifecycle"));
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<CreateBookingHandler>();
         services.AddScoped<BookingLifecycleHandler>();
-        services.AddScoped<CheckPaymentEligibilityHandler>();
+        services.AddScoped<CheckBookingPaymentEligibilityHandler>();
         services.AddScoped<GetCustomerBookingsHandler>();
         services.AddScoped<GetBookingDetailsHandler>();
     }

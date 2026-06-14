@@ -17,7 +17,7 @@ using ModularVerticalSlice.Application.Modules.Catalog;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Application.Delivery.BookingConfirmation;
 using ModularVerticalSlice.Application.Modules.Payments;
-using ModularVerticalSlice.Application.Shared.Modules;
+using ModularVerticalSlice.Application.Shared.Composition;
 using ModularVerticalSlice.Application.Shared.Security;
 using ModularVerticalSlice.Persistence;
 using ModularVerticalSlice.WebApi;
@@ -77,7 +77,7 @@ public sealed class ConcurrentBookingIdempotencyHttpIntegrationTests
         });
         builder.WebHost.UseUrls("http://127.0.0.1:0");
 
-        IModule[] modules =
+        IApplicationBoundary[] boundaries =
         [
             new CatalogModule(),
             new BookingsModule(),
@@ -93,13 +93,13 @@ public sealed class ConcurrentBookingIdempotencyHttpIntegrationTests
         builder.Services.AddScoped<ICurrentUserContext, CurrentUserContext>();
         builder.Services.AddWebApiAuthentication(builder.Configuration, builder.Environment);
         builder.Services.AddWebApiAuthorization();
-        builder.Services.AddApplicationModules(builder.Configuration, modules);
+        builder.Services.AddApplicationBoundaries(builder.Configuration, boundaries);
         builder.Services.AddPersistence();
 
         var app = builder.Build();
         app.UseAuthentication();
         app.UseAuthorization();
-        app.MapApplicationModules(modules);
+        app.MapApplicationBoundaries(boundaries);
         await app.StartAsync(TestContext.Current.CancellationToken);
 
         await using var scope = app.Services.CreateAsyncScope();
