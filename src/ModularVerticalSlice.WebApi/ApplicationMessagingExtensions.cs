@@ -2,7 +2,6 @@ using ModularVerticalSlice.Application.Modules.Bookings;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.BookingLifecycle;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence;
-using ModularVerticalSlice.Application.Modules.Payments;
 using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 using ModularVerticalSlice.Application.Modules.Payments.Messages;
@@ -49,12 +48,12 @@ public static class ApplicationMessagingExtensions
         options.Policies.AddMiddleware(typeof(CorrelationLoggingMiddleware));
         options.Policies.AutoApplyTransactions();
         options.AddSagaType<BookingLifecycleSaga>("booking_lifecycle_sagas");
-        PaymentsRuntimeRecoveryPolicies.Configure(options);
+        PaymentProcessingRuntimeRecoveryPolicies.Configure(options);
         BookingConfirmationDeliveryRuntimeRecoveryPolicies.Configure(options);
         options.LocalQueueFor<BookingConfirmedEvent>().UseDurableInbox();
         options.PublishMessage<ProcessPaymentCommand>()
-            .ToLocalQueue(PaymentsCircuitBreakerOptions.QueueName);
-        options.LocalQueue(PaymentsCircuitBreakerOptions.QueueName)
+            .ToLocalQueue(PaymentProcessingCircuitBreakerOptions.QueueName);
+        options.LocalQueue(PaymentProcessingCircuitBreakerOptions.QueueName)
             .UseDurableInbox()
             .CircuitBreaker(circuit =>
             {
@@ -63,32 +62,32 @@ public static class ApplicationMessagingExtensions
                 circuit.TrackingPeriod = paymentsCircuitBreaker.TrackingPeriod;
                 circuit.PauseTime = paymentsCircuitBreaker.PauseTime;
                 circuit.Include<PaymentTechnicalFailureException>(
-                    PaymentsRuntimeRecoveryPolicies.ShouldAffectCircuitBreaker);
+                    PaymentProcessingRuntimeRecoveryPolicies.ShouldAffectCircuitBreaker);
             });
         options
             .PersistMessagesWithPostgresql(connectionString, "messaging")
             .EnableMessageTransport(_ => { });
     }
 
-    private static PaymentsCircuitBreakerOptions GetPaymentsCircuitBreakerOptions(
+    private static PaymentProcessingCircuitBreakerOptions GetPaymentsCircuitBreakerOptions(
         IConfiguration configuration)
     {
         var circuitBreaker = configuration
-            .GetRequiredSection(PaymentsCircuitBreakerOptions.SectionName)
-            .Get<PaymentsCircuitBreakerOptions>()
+            .GetRequiredSection(PaymentProcessingCircuitBreakerOptions.SectionName)
+            .Get<PaymentProcessingCircuitBreakerOptions>()
             ?? throw new OptionsValidationException(
-                PaymentsCircuitBreakerOptions.SectionName,
-                typeof(PaymentsCircuitBreakerOptions),
+                PaymentProcessingCircuitBreakerOptions.SectionName,
+                typeof(PaymentProcessingCircuitBreakerOptions),
                 ["Payments circuit-breaker configuration is required."]);
 
         var paymentWindow = configuration.GetValue<TimeSpan>("Bookings:Lifecycle:PaymentWindow");
-        var validation = PaymentsCircuitBreakerOptions.Validate(circuitBreaker, paymentWindow);
+        var validation = PaymentProcessingCircuitBreakerOptions.Validate(circuitBreaker, paymentWindow);
 
         if (validation.Failed)
         {
             throw new OptionsValidationException(
-                PaymentsCircuitBreakerOptions.SectionName,
-                typeof(PaymentsCircuitBreakerOptions),
+                PaymentProcessingCircuitBreakerOptions.SectionName,
+                typeof(PaymentProcessingCircuitBreakerOptions),
                 validation.Failures);
         }
 

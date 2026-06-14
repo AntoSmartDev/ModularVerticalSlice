@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
-namespace ModularVerticalSlice.WebApi.Infrastructure.Observability;
+namespace ModularVerticalSlice.WebApi.Infrastructure.HealthChecks;
 
 /// <summary>
 /// Wires the application's liveness and readiness health contract so the host

@@ -9,7 +9,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetBookingDetails;
 using ModularVerticalSlice.Application.Modules.Bookings.Features.GetCustomerBookings;
 using ModularVerticalSlice.Application.Shared.Security;
-using ModularVerticalSlice.WebApi.Infrastructure.Authentication;
+using ModularVerticalSlice.WebApi.Infrastructure.Authorization;
 
 namespace ModularVerticalSlice.IntegrationTests.WebApi;
 

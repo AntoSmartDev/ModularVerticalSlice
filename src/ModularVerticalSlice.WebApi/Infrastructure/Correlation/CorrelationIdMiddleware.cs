@@ -1,6 +1,6 @@
 using ModularVerticalSlice.Application.Shared.Observability;
 
-namespace ModularVerticalSlice.WebApi.Infrastructure.Observability;
+namespace ModularVerticalSlice.WebApi.Infrastructure.Correlation;
 
 internal sealed class CorrelationIdMiddleware
 {

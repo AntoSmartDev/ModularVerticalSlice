@@ -1,8 +1,7 @@
+using System.Linq;
 using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
-using ModularVerticalSlice.Application.Modules.Payments;
 using Wolverine;
-using System.Linq;
 
 namespace ModularVerticalSlice.UnitTests.Modules.Payments;
 
@@ -43,7 +42,7 @@ public class PaymentsRuntimeRecoveryBaselineTests
     {
         var options = new WolverineOptions();
 
-        PaymentsRuntimeRecoveryPolicies.Configure(options);
+        PaymentProcessingRuntimeRecoveryPolicies.Configure(options);
 
         Assert.NotEmpty(options.Policies.Failures);
     }
@@ -57,7 +56,7 @@ public class PaymentsRuntimeRecoveryBaselineTests
         var options = new WolverineOptions();
         var baselineCount = options.Policies.Failures.Count();
 
-        PaymentsRuntimeRecoveryPolicies.Configure(options);
+        PaymentProcessingRuntimeRecoveryPolicies.Configure(options);
 
         Assert.Equal(baselineCount + 2, options.Policies.Failures.Count());
     }
@@ -70,10 +69,10 @@ public class PaymentsRuntimeRecoveryBaselineTests
     {
         var exception = PaymentTechnicalFailureException.RuntimeManagedRecovery("temporary");
 
-        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+        var route = PaymentProcessingTechnicalFailureRuntimeObservability.Describe(exception);
 
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName, route.PolicyName);
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.RuntimeRetryRoute, route.RouteName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName, route.PolicyName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.RuntimeRetryRoute, route.RouteName);
         Assert.True(route.UsesRuntimeRetry);
         Assert.False(route.UsesErrorQueue);
     }
@@ -86,10 +85,10 @@ public class PaymentsRuntimeRecoveryBaselineTests
     {
         var exception = PaymentTechnicalFailureException.EscalateOrManualIntervention("terminal");
 
-        var route = PaymentsTechnicalFailureRuntimeObservability.Describe(exception);
+        var route = PaymentProcessingTechnicalFailureRuntimeObservability.Describe(exception);
 
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName, route.PolicyName);
-        Assert.Equal(PaymentsTechnicalFailureRuntimeObservability.ErrorQueueRoute, route.RouteName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName, route.PolicyName);
+        Assert.Equal(PaymentProcessingTechnicalFailureRuntimeObservability.ErrorQueueRoute, route.RouteName);
         Assert.False(route.UsesRuntimeRetry);
         Assert.True(route.UsesErrorQueue);
     }
@@ -100,9 +99,9 @@ public class PaymentsRuntimeRecoveryBaselineTests
     [Fact]
     public void DescribeRuntimeObservability_Should_Keep_Retry_And_Dlq_Routes_Distinct()
     {
-        var retryRoute = PaymentsTechnicalFailureRuntimeObservability.Describe(
+        var retryRoute = PaymentProcessingTechnicalFailureRuntimeObservability.Describe(
             PaymentTechnicalFailureException.RuntimeManagedRecovery("temporary"));
-        var dlqRoute = PaymentsTechnicalFailureRuntimeObservability.Describe(
+        var dlqRoute = PaymentProcessingTechnicalFailureRuntimeObservability.Describe(
             PaymentTechnicalFailureException.EscalateOrManualIntervention("terminal"));
 
         Assert.NotEqual(retryRoute.PolicyName, dlqRoute.PolicyName);

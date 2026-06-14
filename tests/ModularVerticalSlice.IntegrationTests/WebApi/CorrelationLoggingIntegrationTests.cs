@@ -14,7 +14,7 @@ using ModularVerticalSlice.Application.Modules.Bookings.Features.CreateBooking;
 using ModularVerticalSlice.Application.Modules.Bookings.Persistence.Entities;
 using ModularVerticalSlice.Application.Modules.Catalog.Persistence.Entities;
 using ModularVerticalSlice.Persistence;
-using ModularVerticalSlice.WebApi.Infrastructure.Observability;
+using ModularVerticalSlice.WebApi.Infrastructure.Correlation;
 
 namespace ModularVerticalSlice.IntegrationTests.WebApi;
 

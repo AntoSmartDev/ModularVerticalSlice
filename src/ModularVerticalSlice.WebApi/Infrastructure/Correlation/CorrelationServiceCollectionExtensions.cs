@@ -1,9 +1,9 @@
 using ModularVerticalSlice.Application.Shared.Observability;
 
-namespace ModularVerticalSlice.WebApi.Infrastructure.Observability;
+namespace ModularVerticalSlice.WebApi.Infrastructure.Correlation;
 
 /// <summary>Registers correlation ID services and middleware.</summary>
-public static class ObservabilityServiceCollectionExtensions
+public static class CorrelationServiceCollectionExtensions
 {
     /// <summary>Registers <see cref="ICorrelationContext"/> and its WebApi implementation.</summary>
     public static IServiceCollection AddCorrelation(this IServiceCollection services)

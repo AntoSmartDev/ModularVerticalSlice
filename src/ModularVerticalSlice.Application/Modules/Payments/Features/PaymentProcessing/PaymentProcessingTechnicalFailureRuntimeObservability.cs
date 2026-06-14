@@ -1,14 +1,14 @@
 using ModularVerticalSlice.Application.Modules.Payments.Domain;
 using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 
-namespace ModularVerticalSlice.Application.Modules.Payments;
+namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 
 /// <summary>
 /// Holds the explicit runtime-observability baseline for Payments technical failures.
 /// This stays intentionally local and lightweight: the goal is to make retry vs DLQ
 /// intent reviewable without introducing provider-specific infrastructure.
 /// </summary>
-public static class PaymentsTechnicalFailureRuntimeObservability
+public static class PaymentProcessingTechnicalFailureRuntimeObservability
 {
     /// <summary>
     /// Wolverine policy label for the runtime-managed recovery branch.
@@ -45,19 +45,19 @@ public static class PaymentsTechnicalFailureRuntimeObservability
     /// <summary>
     /// Describes how the current Payments runtime baseline will expose a technical failure.
     /// </summary>
-    public static PaymentsTechnicalFailureRuntimeRoute Describe(
+    public static PaymentProcessingTechnicalFailureRuntimeRoute Describe(
         PaymentTechnicalFailureException exception)
     {
         return exception.RecoveryDecision switch
         {
-            PaymentRecoveryDecisionKind.RuntimeManagedRecovery => new PaymentsTechnicalFailureRuntimeRoute(
+            PaymentRecoveryDecisionKind.RuntimeManagedRecovery => new PaymentProcessingTechnicalFailureRuntimeRoute(
                 RuntimeManagedRecoveryPolicyName,
                 RuntimeRetryRoute,
                 UsesRuntimeRetry: true,
                 UsesErrorQueue: false,
                 Cooldowns: RuntimeRecoveryCooldowns),
 
-            PaymentRecoveryDecisionKind.EscalateOrManualIntervention => new PaymentsTechnicalFailureRuntimeRoute(
+            PaymentRecoveryDecisionKind.EscalateOrManualIntervention => new PaymentProcessingTechnicalFailureRuntimeRoute(
                 EscalationToDlqPolicyName,
                 ErrorQueueRoute,
                 UsesRuntimeRetry: false,
@@ -73,7 +73,7 @@ public static class PaymentsTechnicalFailureRuntimeObservability
 /// <summary>
 /// Review-friendly shape for the current Payments runtime observability baseline.
 /// </summary>
-public sealed record PaymentsTechnicalFailureRuntimeRoute(
+public sealed record PaymentProcessingTechnicalFailureRuntimeRoute(
     string PolicyName,
     string RouteName,
     bool UsesRuntimeRetry,

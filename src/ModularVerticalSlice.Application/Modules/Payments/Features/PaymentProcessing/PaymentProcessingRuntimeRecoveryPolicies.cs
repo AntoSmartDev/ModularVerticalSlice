@@ -3,12 +3,12 @@ using ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessi
 using Wolverine;
 using Wolverine.ErrorHandling;
 
-namespace ModularVerticalSlice.Application.Modules.Payments;
+namespace ModularVerticalSlice.Application.Modules.Payments.Features.PaymentProcessing;
 
 /// <summary>
 /// Holds the explicit Wolverine-style runtime-recovery baseline for Payments technical failures.
 /// </summary>
-public static class PaymentsRuntimeRecoveryPolicies
+public static class PaymentProcessingRuntimeRecoveryPolicies
 {
     /// <summary>
     /// Determines whether a technical failure contributes to the Payments listener circuit breaker.
@@ -26,13 +26,13 @@ public static class PaymentsRuntimeRecoveryPolicies
         options.Policies
             .OnException<PaymentTechnicalFailureException>(
                 x => x.RecoveryDecision == PaymentRecoveryDecisionKind.RuntimeManagedRecovery,
-                PaymentsTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName)
-            .RetryWithCooldown(PaymentsTechnicalFailureRuntimeObservability.RuntimeRecoveryCooldowns.ToArray());
+                PaymentProcessingTechnicalFailureRuntimeObservability.RuntimeManagedRecoveryPolicyName)
+            .RetryWithCooldown(PaymentProcessingTechnicalFailureRuntimeObservability.RuntimeRecoveryCooldowns.ToArray());
 
         options.Policies
             .OnException<PaymentTechnicalFailureException>(
                 x => x.RecoveryDecision == PaymentRecoveryDecisionKind.EscalateOrManualIntervention,
-                PaymentsTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName)
+                PaymentProcessingTechnicalFailureRuntimeObservability.EscalationToDlqPolicyName)
             .MoveToErrorQueue();
     }
 }
