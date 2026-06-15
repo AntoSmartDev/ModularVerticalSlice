@@ -6,9 +6,10 @@
 ## Context
 
 The application uses a single shared `AppDbContext` (EF Core) backed by one PostgreSQL
-database. Modules — Bookings, Catalog, Payments, Notifications — must be isolated from
-each other's persistence surface: a handler in the Bookings module must not accidentally
-query or modify Catalog entities.
+database. Business modules — Bookings, Catalog, Payments — must be isolated from each
+other's persistence surface: a handler in the Bookings module must not accidentally query
+or modify Catalog entities. The solution also contains `Delivery/BookingConfirmation`,
+but delivery capabilities are not treated as persistence-owning business modules.
 
 ### The Bounded DbContext precedent
 
@@ -93,7 +94,9 @@ contract. That contract operates through the owning module's slice without savin
 independently; it is a deliberate local-transaction choice and must be redesigned if the
 process or database boundary changes. Same-store read composition may use a dedicated
 composite slice when one projected relational query is clearer and more efficient than
-introducing premature replication or remote calls.
+introducing premature replication or remote calls. Delivery boundaries stay downstream
+consumers of those outcomes; they do not justify broadening module-owned persistence
+surfaces.
 
 The explicit query surface also helps control a common EF Core N+1 failure mode. The
 current composed Bookings queries join and project the required data in one SQL query

@@ -47,6 +47,32 @@ hidden behind a global DbContext. Extract when earned, not by default.
 
 ---
 
+## Relationship to Vertical Slice and Clean Architecture
+
+This project starts from **classic Vertical Slice Architecture** and keeps its main
+strength: each use case owns its request path end-to-end instead of being split across
+horizontal technical layers.
+
+It then adds two constraints that classic VSA often leaves implicit:
+
+- **explicit business-module boundaries** under `Modules/`
+- **explicit delivery boundaries** under `Delivery/` for consequence-handling capabilities
+  that are first-class application concerns but not business modules
+
+It also keeps the useful parts of **Clean Architecture**: explicit boundaries,
+dependency discipline, testability, resilience, and a composition root. What it avoids is
+the boilerplate that often appears when repository layers, service layers, and abstractions
+are introduced before the codebase has earned them.
+
+Entity behavior stays on the persisted entity by default. A separate `Domain/` folder
+exists only when a rule, policy, or value object does not belong cleanly to one persisted
+entity, or when a cross-entity concept deserves its own home.
+
+In short: keep the speed of Vertical Slice Architecture, add modular boundaries and
+reliable messaging, avoid unnecessary Clean Architecture ceremony.
+
+---
+
 ## Key design choices
 
 **Wolverine over MediatR**  
@@ -139,28 +165,30 @@ rationale and comparison with Bounded DbContext.
 ## Architecture overview
 
 The solution is organised around **vertical slices**: each feature owns its command,
-handler, and persistence access end-to-end. Modules group related slices and define their
-public boundary. Commands, events, and asynchronous coordination use **Wolverine
-messages**. Direct calls into another module's feature or domain internals are not
-permitted. Explicit same-store read composition is allowed when its narrower coupling and
-single-query efficiency are worth the trade-off. The booking flow also demonstrates a
-Catalog-owned in-process reservation contract: Bookings can reserve tickets atomically
-without depending on Catalog features or persistence, while later release remains an
-asynchronous compensation message. The `WebApi` project is the composition root: it
-wires modules together but contains no business logic.
+handler, and persistence access end-to-end. `Modules/` contains business boundaries.
+`Delivery/` contains concrete delivery capabilities that react to application outcomes
+without pretending to be business modules. Commands, events, and asynchronous
+coordination use **Wolverine messages**. Direct calls into another module's feature or
+domain internals are not permitted. Explicit same-store read composition is allowed when
+its narrower coupling and single-query efficiency are worth the trade-off. The booking
+flow also demonstrates a Catalog-owned in-process reservation contract: Bookings can
+reserve tickets atomically without depending on Catalog features or persistence, while
+later release remains an asynchronous compensation message. The `WebApi` project is the
+composition root: it wires application boundaries together but contains no business logic.
 
 ```
 src/
-  ModularVerticalSlice.Application/     # modules, handlers, sagas, domain logic
+  ModularVerticalSlice.Application/     # application boundaries, handlers, sagas, domain logic
     Modules/
       Bookings/
         Features/                       # one folder per vertical slice
         Persistence/                    # DbContextSlice interfaces (module-owned)
         Messages/                       # public events and commands
       Catalog/
-        Contracts/                       # public in-process collaboration contracts
+        Contracts/                      # public in-process collaboration contracts
       Payments/
-      Notifications/
+    Delivery/
+      BookingConfirmation/              # delivery capability, not a business module
     Shared/                             # cross-cutting contracts (no module deps)
   ModularVerticalSlice.Persistence/     # AppDbContext, EF Core config, migrations
   ModularVerticalSlice.SharedKernel/    # Result<T>, Error, ErrorType
@@ -180,7 +208,8 @@ Structural boundaries are enforced by automated tests in `ModularVerticalSlice.A
 using [NetArchTest](https://github.com/BenMorris/NetArchTest). Rules include:
 
 - modules do not reference each other's `Features` or `Domain` namespaces
-- handlers and sagas reside in `Application.Modules` and have no dependency on `WebApi`
+- delivery boundaries do not act as hidden business modules
+- handlers and sagas reside in `Application` boundary namespaces and have no dependency on `WebApi`
 - `WebApi` does not reference module persistence entity types
 - `Application` has no dependency on the `Persistence` assembly — handlers use only their declared `DbContextSlice`
 
