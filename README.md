@@ -1,7 +1,6 @@
 # ModularVerticalSlice.NET
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Verify](https://github.com/AntoSmartDev/ModularVerticalSlice/actions/workflows/verify.yml/badge.svg)](https://github.com/AntoSmartDev/ModularVerticalSlice/actions/workflows/verify.yml)
 ![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
 
 A modular monolith reference architecture for .NET teams that want explicit boundaries today and a credible path toward service extraction later, without starting with microservice overhead.
