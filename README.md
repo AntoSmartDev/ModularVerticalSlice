@@ -1,5 +1,9 @@
 # ModularVerticalSlice.NET
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Verify](https://github.com/AntoSmartDev/ModularVerticalSlice/actions/workflows/verify.yml/badge.svg)](https://github.com/AntoSmartDev/ModularVerticalSlice/actions/workflows/verify.yml)
+![.NET 10](https://img.shields.io/badge/.NET-10-512BD4)
+
 A modular monolith reference architecture for .NET teams that want explicit boundaries today and a credible path toward service extraction later, without starting with microservice overhead.
 
 ## What this repository is
@@ -11,6 +15,10 @@ It is aimed at teams that need:
 - business boundaries enforced by the compiler and architecture tests
 - message-driven coordination without introducing a broker on day one
 - a modular monolith that can evolve without a disruptive rewrite
+
+In concrete terms, that means safer refactors through executable boundary rules, durable messaging without introducing a separate broker up front, and a lower extraction cost because collaboration contracts stay explicit instead of leaking through a shared application core.
+
+The sample domain is event ticket booking: Catalog owns events and ticket inventory, Bookings owns reservation and booking workflows, and Payments shows downstream processing boundaries.
 
 ## Architecture model
 
@@ -26,6 +34,10 @@ It also keeps the useful parts of Clean Architecture: explicit boundaries, depen
 Entity behavior stays on the persisted entity by default. A separate `Domain/` folder exists only when a rule, policy, or value object does not belong cleanly to one persisted entity, or when a cross-entity concept deserves its own home.
 
 In practice this is a modular monolith with explicit boundaries, local transactions, and message-based coordination across modules.
+
+## Scope and non-goals
+
+This repository is a reference architecture and starter kit, not a reusable framework or NuGet product. Payments and downstream delivery flows are demonstration-grade application slices, useful for showing architecture and reliability patterns rather than claiming production-ready integrations out of the box.
 
 ## Why modular-first
 
@@ -189,6 +201,20 @@ Notes:
 
 Hosted CI is optional automation over the same public contract. Any CI workflow should invoke this script so failures stay locally reproducible.
 
+## Reliability capabilities
+
+The repository is meant to demonstrate reliability patterns as concrete runtime capabilities, not just as architectural slogans.
+
+| Need | Capability | Why it matters |
+|---|---|---|
+| durable publish on commit | transactional outbox | prevents lost messages when application state commits |
+| safe message receipt | inbox / durable handling | reduces duplicate or partial downstream processing |
+| transient fault recovery | retry policies | absorbs temporary infrastructure failures |
+| downstream failure containment | circuit breaker | avoids hammering a failing dependency |
+| workflow coordination | sagas | makes long-running, multi-step flows explicit |
+| delayed follow-up work | scheduled messages | supports timeout and reminder behavior |
+| failure inspection | dead-letter queue | preserves failed work for diagnosis and recovery |
+
 ## Architecture rules
 
 Structural boundaries are enforced by `ModularVerticalSlice.ArchitectureTests` using [NetArchTest](https://github.com/BenMorris/NetArchTest).
@@ -199,7 +225,7 @@ Rules include:
 - delivery boundaries do not act as hidden business modules
 - handlers and sagas live in `Application` namespaces and do not depend on `WebApi`
 - `WebApi` does not reference module persistence entity types
-- `Application` does not depend on the `Persistence` assembly directly; handlers use only their declared `DbContextSlice`
+- `Application` does not depend on the `Persistence` assembly; handlers use only their declared `DbContextSlice`
 
 These rules are meant to fail builds when violated. They are not advisory.
 
@@ -261,3 +287,7 @@ Because Wolverine durable messaging shares the same PostgreSQL dependency, the r
 ## Architecture decisions
 
 Design decisions with rationale are recorded in [docs/adr/](docs/adr/).
+
+## License
+
+This repository is released under the [MIT License](LICENSE).
