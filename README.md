@@ -293,3 +293,9 @@ Design decisions with rationale are recorded in [docs/adr/](docs/adr/).
 ## License
 
 This repository is released under the [MIT License](LICENSE).
+
+## Contributors
+
+ModularVerticalSlice is actively maintained by **[Antonio Angiò](https://github.com/AntoSmartDev/)**.
+Contributions are welcome through pull requests.
+
