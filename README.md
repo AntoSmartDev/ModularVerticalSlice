@@ -6,7 +6,7 @@
 
 A modular monolith reference architecture for .NET teams that want explicit boundaries today and a credible path toward service extraction later, without starting with microservice overhead.
 
-<img width="1460" height="990" alt="image" src="https://github.com/user-attachments/assets/9cc12d05-1971-48ee-ba4b-15b057912cf9" />
+<img width="1460" height="1016" alt="image" src="https://github.com/user-attachments/assets/7d6ff03d-25d9-4df8-997c-56a7d27b222f" />
 
 ## What this repository is
 
